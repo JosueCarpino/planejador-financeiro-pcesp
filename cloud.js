@@ -158,7 +158,7 @@ async function init() {
     db = fireSDK.getFirestore(app);
     authSDK.onAuthStateChanged(auth, value => {
       const previousUid = user?.uid;
-      if (previousUid === value?.uid) return;
+      if (previousUid && previousUid === value?.uid) return;
       user = value;
       ready = false; knownRevision = null; queued = false; editVersion = 0;
       clearTimeout(timer);
