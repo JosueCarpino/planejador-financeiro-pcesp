@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#091528"><meta name="robots" content="noindex,nofollow">
+<title>Finanças PCESP | Planejador e simulador</title>
+<link rel="stylesheet" href="./style.css">
+</head><body>
+<header class="top"><div class="brand"><span class="logo">◈</span><div><strong>Finanças PCESP</strong><small>Planejador pessoal • v2</small></div></div><nav><a href="#visao">Visão geral</a><a href="#premissas">Premissas</a><a href="#ajustes">Lançamentos</a><a href="#nuvem">Nuvem</a></nav><span class="localstate" id="saveStatus" aria-live="polite">Salvo neste dispositivo</span></header>
+<div class="shell">
+<div class="intro"><div><span class="eyebrow">PLANEJAMENTO FINANCEIRO E CONSOLIDAÇÃO</span><h1>Seu dinheiro, com cenários claros.</h1><p>Simule a transição de renda, compare parcelas e identifique meses de risco. Valores editados aqui não entram no código público.</p></div><div class="actions"><button id="exportBtn" class="ghost">↓ Backup JSON</button><label class="ghost upload">↑ Importar JSON<input id="importFile" type="file" accept=".json,application/json" hidden></label></div></div>
+<div class="layout">
+<aside class="sidebar" id="premissas">
+<div class="pane headpane"><h2>Premissas do plano</h2><p>Todos os valores são privados no navegador. Preencha suas informações reais.</p><div class="shortgrid">
+<div class="field"><label for="monthStart">Mês inicial</label><input type="month" id="monthStart" value="2026-09"></div>
+<div class="field"><label for="horizon">Horizonte</label><select id="horizon"><option value="12">12 meses</option><option value="16" selected>16 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div></div>
+<div class="pane"><h3>01. Caixa e despesas</h3><div class="fields">
+<label class="field">Saldo disponível no início (R$)<input id="cash" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Gastos fixos mensais (R$)<input id="cost" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Gastos no primeiro mês (R$)<input id="costSep" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Reserva mínima desejada (R$)<input id="reserve" type="number" min="0" step=".01" value="0"></label>
+</div><p class="micro">O custo do primeiro mês substitui o gasto fixo desse mês, sem somar duas vezes.</p></div>
+<div class="pane"><h3>02. Renda e recebimentos</h3><div class="fields">
+<label class="field">FGTS em out/2026 (R$)<input id="fgts" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Salário líquido ACADEPOL (R$)<input id="acad" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Competências em nov/2026<select id="novComps"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+<label class="field">Salário líquido a partir de abr/2027 (R$)<input id="post" type="number" min="0" step=".01" value="0"></label>
+<label class="field">13º/extra dez/2027 (R$)<input id="bonus" type="number" min="0" step=".01" value="0"></label>
+</div><p class="micro">Calendário inicial: sem salário em set/out/2026; ACADEPOL de nov/2026 a mar/2027; renda posterior a partir de abr/2027. Ajuste diferenças em Lançamentos.</p></div>
+<div class="pane"><h3>03. Contratos existentes</h3><div class="fields">
+<label class="field">Nubank • quitação (R$)<input id="nubBal" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Nubank • parcela (R$)<input id="nubPmt" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Bradesco novo • quitação (R$)<input id="newBal" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Bradesco novo • parcela (R$)<input id="newPmt" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Bradesco CLT antigo • quitação (R$)<input id="oldBal" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Bradesco CLT antigo • parcela (R$)<input id="oldPmt" type="number" min="0" step=".01" value="0"></label>
+</div><p class="micro">Use os valores oficiais de quitação antecipada. Sem taxas/prazos remanescentes dos contratos, não é possível calcular o saldo devedor futuro exato.</p></div>
+<div class="pane"><h3>04. Novo consignado BB</h3><div class="fields">
+<label class="field">Valor efetivamente liberado (R$)<input id="bbLoan" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Taxa efetiva mensal (% a.m.)<input id="bbRate" type="number" min="0" max="100" step=".01" value="1.8"></label>
+<label class="field">Prazo do contrato<select id="bbTerm"><option value="36">36 meses</option><option value="48">48 meses</option><option value="60" selected>60 meses</option><option value="72">72 meses</option><option value="84">84 meses</option></select></label>
+<label class="field">Primeira parcela após liberação<select id="startPay"><option value="1" selected>1 mês depois</option><option value="2">2 meses depois</option></select></label>
+</div><p class="micro">A prestação é calculada pela tabela Price. A taxa informada precisa representar o custo efetivo do contrato, se houver tarifas e seguros.</p></div>
+<div class="pane sidefoot"><button class="ghost full" id="exampleBtn">Preencher exemplo fictício</button><button class="dangerlink" id="resetBtn">Zerar todos os dados</button></div>
+</aside>
+<main id="visao" class="main">
+<div class="notice" id="errors" hidden></div>
+<div class="pane summary"><div class="section-head"><div><span class="eyebrow">PAINEL DECISÓRIO</span><h2>Comparação de estratégias</h2></div><span class="pill" id="dateSpan"></span></div><div class="scenarios" id="scenarioCards"></div><p class="small">O saldo de caixa <b>não é patrimônio líquido</b>. Um empréstimo novo aumenta a entrada de dinheiro, mas gera obrigação futura. Compare o menor caixa e a capacidade de pagar, não somente o saldo final.</p></div>
+<div class="pane"><div class="section-head"><div><h2 id="scenarioTitle">Projeção selecionada</h2><p id="scenarioDesc" class="muted"></p></div><span id="scenarioRisk" class="pill"></span></div><div class="metrics" id="metrics"></div><div class="insights" id="insights"></div></div>
+<div class="pane"><div class="section-head"><div><h2>Evolução do caixa</h2><p class="muted">Saldo ao fechar cada mês. A linha tracejada indica a reserva desejada.</p></div><button id="csvBtn" class="ghost smallbtn">↓ Fluxo CSV</button></div><div id="chart" class="chart" role="img" aria-label="Evolução projetada do saldo de caixa"></div></div>
+<div class="pane"><h2>Fluxo de caixa mensal</h2><div class="table-scroll"><table><thead><tr><th>Mês</th><th class="right">Entradas</th><th class="right">Saídas</th><th class="right">Resultado</th><th class="right">Caixa final</th><th>Observações</th></tr></thead><tbody id="cashflow"></tbody></table></div></div>
+<div class="pane" id="ajustes"><div class="section-head"><div><h2>Lançamentos personalizados</h2><p class="muted">Adicione rendimentos, compras, despesas inesperadas ou mudanças futuras; entram nos três cenários.</p></div></div>
+<form id="entryForm" class="entryform"><label class="field">Mês<input id="entryMonth" type="month" required value="2026-11"></label><label class="field">Natureza<select id="entryType"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label class="field">Descrição<input id="entryName" maxlength="80" required placeholder="Ex.: manutenção do carro"></label><label class="field">Valor (R$)<input id="entryAmount" type="number" min=".01" step=".01" required></label><label class="field">Periodicidade<select id="entryRecurring"><option value="once">Uma vez</option><option value="monthly">Repetir até o fim do plano</option></select></label><button type="submit" class="primary">+ Adicionar</button></form>
+<div id="entryList" class="entry-list"></div></div>
+<div class="pane" id="nuvem"><div class="section-head"><div><h2>Sincronização privada</h2><p class="muted">GitHub Pages hospeda o aplicativo. O Firebase guarda o plano na sua conta Google, em um projeto Firebase independente.</p></div><span id="cloudBadge" class="pill">Modo local</span></div>
+<div class="cloud-controls"><button class="primary" id="cloudLogin" type="button">Entrar com Google</button><button class="ghost" id="cloudPull" type="button" disabled>↓ Carregar da nuvem</button><button class="ghost" id="cloudPush" type="button" disabled>↑ Enviar à nuvem</button><button class="ghost" id="cloudLogout" type="button" disabled>Sair</button></div><p id="cloudStatus" class="small" aria-live="polite">Dados locais são salvos automaticamente; a sincronização remota exige entrar com Google.</p><p class="micro">Atenção: carregar da nuvem substitui os dados locais, e enviar substitui a cópia remota. Faça backup JSON antes de trocar de dispositivo. Acesso à nuvem depende das regras do Firestore.</p></div>
+<div class="footer">Este modelo é de planejamento, não aconselhamento financeiro. Não considera inflação, rendimentos de aplicações, mudanças tributárias, tarifas ocultas ou datas bancárias efetivas. Simulações não substituem propostas oficiais.</div>
+</main></div></div>
+<script src="./firebase-config.js"></script>
+<script src="./app.js"></script>
+<script src="./cloud.js" defer></script>
+</body></html>
