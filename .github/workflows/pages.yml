@@ -1,0 +1,48 @@
+name: Publicar planejador financeiro (GitHub Pages)
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "app.js"
+      - "cloud.js"
+      - "style.css"
+      - "firebase-config.js"
+      - "verify.cjs"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar sintaxe e calculos
+        run: |
+          node --check app.js
+          node --check cloud.js
+          node verify.cjs
+      - name: Separar apenas arquivos publicos
+        run: |
+          mkdir -p public
+          cp index.html app.js cloud.js style.css firebase-config.js public/
+          touch public/.nojekyll
+          test ! -e public/web_app_pcesp.py
+          test ! -e public/firestore.rules
+          test ! -e public/verify.cjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./public
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
