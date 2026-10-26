@@ -2,7 +2,9 @@
 
 Aplicativo web **independente**, hospedado em GitHub Pages, com opção de armazenamento privado pelo Firebase Authentication + Cloud Firestore. Não utiliza código, projeto Firebase ou banco de dados do painel TAF.
 
-**Endereço previsto após publicação:** https://josuecarpino.github.io/planejador-financeiro-pcesp/
+**Site:** https://josuecarpino.github.io/planejador-financeiro-pcesp/
+
+**Firebase Web configurado:** projeto exclusivo `financas-1c48a`, via `firebase-config.js`. A sincronização depende ainda de ativar Google Authentication e publicar as regras no Firestore.
 
 ## O que o aplicativo faz
 
@@ -20,16 +22,17 @@ Este repositório tem um fluxo em `.github/workflows/pages.yml` que verifica o J
 
 Acesse **Settings → Pages → Build and deployment** e selecione **GitHub Actions**, se ainda não estiver configurado. Veja o progresso na aba **Actions**. O endereço só deve ser considerado ativo depois de uma implantação bem-sucedida.
 
-## 2. Criar um Firebase exclusivo para as finanças
+## 2. Concluir o Firebase independente
 
-**Não reutilize o projeto Firebase `taf-acadepol`.** Use um projeto novo, por exemplo `financeiro-pcesp-web`.
+O usuário criou o projeto `financas-1c48a`, **separado do TAF**, e a configuração Web já está registrada em `firebase-config.js`. Não reutilize `taf-acadepol`, não instale o SDK via npm e não ative Firebase Hosting.
 
-1. Entre em https://console.firebase.google.com/ e crie um projeto Firebase no plano Spark (gratuito dentro das cotas).
-2. Em **Project settings → Your apps**, registre um novo aplicativo **Web** (ícone `</>`).
-3. Copie os valores fornecidos pelo Firebase para o arquivo `firebase-config.js` deste repositório, preservando a variável `window.FIN_FIREBASE_CONFIG`.
-4. Em **Authentication → Sign-in method**, ative **Google**. Em **Settings → Authorized domains**, adicione **josuecarpino.github.io**.
-5. Em **Firestore Database**, crie o banco **(default)**, Standard, inicialmente em **production mode**.
-6. Em **Firestore → Rules**, cole **todo** o conteúdo de `firestore.rules` e clique **Publish**. O arquivo no GitHub não aplica regras automaticamente ao serviço Firebase.
+1. Acesse [Authentication do projeto financeiro](https://console.firebase.google.com/project/financas-1c48a/authentication/providers) e ative o provedor **Google** em **Sign-in method**, selecionando um e-mail de suporte quando solicitado.
+2. Em **Authentication → Settings → Authorized domains**, inclua **josuecarpino.github.io** (sem `https://` e sem caminho).
+3. Acesse [Firestore Database](https://console.firebase.google.com/project/financas-1c48a/firestore) e crie o banco **(default)**, edição Standard, inicialmente em modo de produção, caso ainda não exista.
+4. Abra [Firestore Rules](https://console.firebase.google.com/project/financas-1c48a/firestore/rules); cole **todo** o arquivo `firestore.rules` deste repositório e clique em **Publish**. As regras restringem cada plano financeiro à própria conta autenticada.
+5. **Teste o login e a sincronização** no site e depois em outro navegador. O commit GitHub não aplica automaticamente as regras remotas.
+
+A configuração publicada contém apenas identificadores públicos do SDK Firebase Web; as permissões de acesso dependem de Authentication e das regras do Firestore.
 
 ### Teste de sincronização
 
