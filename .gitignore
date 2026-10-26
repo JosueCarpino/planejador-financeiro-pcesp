@@ -1,0 +1,11 @@
+# Nunca versionar backups, exportacoes bancarias nem arquivos de acesso
+*.local.json
+*backup*.json
+*extrato*.csv
+*extrato*.xlsx
+*.pem
+*.p12
+*.key
+.env
+.env.*
+serviceAccount*.json
