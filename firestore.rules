@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/finance/{docId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && docId == 'plan'
+        && request.resource.data.keys().hasOnly(['schemaVersion', 'payload', 'updatedAt'])
+        && request.resource.data.schemaVersion == 2
+        && request.resource.data.payload is map;
+      allow delete: if request.auth != null && request.auth.uid == uid && docId == 'plan';
+    }
+  }
+}
