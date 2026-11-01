@@ -13,8 +13,13 @@
 <div class="pane headpane"><h2>Premissas do plano</h2><p>Todos os valores são privados no navegador. Preencha suas informações reais.</p><div class="shortgrid">
 <div class="field"><label for="monthStart">Mês inicial</label><input type="month" id="monthStart" value="2026-09"></div>
 <div class="field"><label for="horizon">Horizonte</label><select id="horizon"><option value="12">12 meses</option><option value="16" selected>16 meses</option><option value="24">24 meses</option><option value="36">36 meses</option></select></div></div></div>
+<div class="pane"><h3>00. Saldos bancários</h3><div class="fields">
+<label class="field">Conta Nubank (R$)<input id="accountNubank" data-account="nubank" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Conta Banco do Brasil (R$)<input id="accountBB" data-account="bb" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Conta Bradesco (R$)<input id="accountBradesco" data-account="bradesco" type="number" min="0" step=".01" value="0"></label>
+</div><p class="micro" id="accountsTotal">Total das contas: —</p><button type="button" class="ghost full" id="useAccounts">Usar total das contas como caixa inicial</button><p class="micro">Saldos em conta não são dívidas e não incluem limite do cartão. O total pode ser transferido para o campo de caixa inicial.</p></div>
 <div class="pane"><h3>01. Caixa e despesas</h3><div class="fields">
-<label class="field">Saldo disponível no início (R$)<input id="cash" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Caixa inicial do plano (R$)<input id="cash" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Gastos fixos mensais (R$)<input id="cost" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Gastos no primeiro mês (R$)<input id="costSep" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Reserva mínima desejada (R$)<input id="reserve" type="number" min="0" step=".01" value="0"></label>
@@ -22,18 +27,25 @@
 <div class="pane"><h3>02. Renda e recebimentos</h3><div class="fields">
 <label class="field">FGTS em out/2026 (R$)<input id="fgts" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Salário líquido ACADEPOL (R$)<input id="acad" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Pagamento específico em nov/2026 (R$)<input id="novIncome" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Competências em nov/2026<select id="novComps"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
 <label class="field">Salário líquido a partir de abr/2027 (R$)<input id="post" type="number" min="0" step=".01" value="0"></label>
 <label class="field">13º/extra dez/2027 (R$)<input id="bonus" type="number" min="0" step=".01" value="0"></label>
-</div><p class="micro">Calendário inicial: sem salário em set/out/2026; ACADEPOL de nov/2026 a mar/2027; renda posterior a partir de abr/2027. Ajuste diferenças em Lançamentos.</p></div>
+</div><p class="micro">Pagamento específico de novembro substitui a fórmula de competências, para não duplicar salário. Demais pagamentos estimados pelo líquido informado. O dia exato do 5º dia útil não é calculado neste fluxo mensal.</p></div>
 <div class="pane"><h3>03. Contratos existentes</h3><div class="fields">
 <label class="field">Nubank • quitação (R$)<input id="nubBal" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Nubank • parcela (R$)<input id="nubPmt" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Nubank • vencimento (dia)<input id="nubDue" type="number" min="0" max="31" step="1" value="0"></label>
+<label class="field">Nubank • parcelas restantes (0 = não informado)<input id="nubRemain" type="number" min="0" max="360" step="1" value="0"></label>
 <label class="field">Bradesco novo • quitação (R$)<input id="newBal" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Bradesco novo • parcela (R$)<input id="newPmt" type="number" min="0" step=".01" value="0"></label>
+<label class="field">Bradesco novo • vencimento (dia)<input id="newDue" type="number" min="0" max="31" step="1" value="0"></label>
+<label class="field">Bradesco novo • parcelas restantes (0 = não informado)<input id="newRemain" type="number" min="0" max="360" step="1" value="0"></label>
 <label class="field">Bradesco CLT antigo • quitação (R$)<input id="oldBal" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Bradesco CLT antigo • parcela (R$)<input id="oldPmt" type="number" min="0" step=".01" value="0"></label>
-</div><p class="micro">Use os valores oficiais de quitação antecipada. Sem taxas/prazos remanescentes dos contratos, não é possível calcular o saldo devedor futuro exato.</p></div>
+<label class="field">Bradesco CLT antigo • vencimento (dia)<input id="oldDue" type="number" min="0" max="31" step="1" value="0"></label>
+<label class="field">Bradesco CLT antigo • parcelas restantes (0 = não informado)<input id="oldRemain" type="number" min="0" max="360" step="1" value="0"></label>
+</div><p class="micro">0 parcelas restantes = prazo desconhecido e projeção sem data de término. Caso informe o total de parcelas restantes, o fluxo para de cobrar após esse número de meses. O vencimento é apenas indicativo: o fluxo não simula dias nem ajustes bancários de fevereiro. Quitações devem ser confirmadas com os bancos.</p></div>
 <div class="pane"><h3>04. Novo consignado BB</h3><div class="fields">
 <label class="field">Valor efetivamente liberado (R$)<input id="bbLoan" type="number" min="0" step=".01" value="0"></label>
 <label class="field">Taxa efetiva mensal (% a.m.)<input id="bbRate" type="number" min="0" max="100" step=".01" value="1.8"></label>
@@ -48,7 +60,8 @@
 <div class="pane"><div class="section-head"><div><h2 id="scenarioTitle">Projeção selecionada</h2><p id="scenarioDesc" class="muted"></p></div><span id="scenarioRisk" class="pill"></span></div><div class="metrics" id="metrics"></div><div class="insights" id="insights"></div></div>
 <div class="pane"><div class="section-head"><div><h2>Evolução do caixa</h2><p class="muted">Saldo ao fechar cada mês. A linha tracejada indica a reserva desejada.</p></div><button id="csvBtn" class="ghost smallbtn">↓ Fluxo CSV</button></div><div id="chart" class="chart" role="img" aria-label="Evolução projetada do saldo de caixa"></div></div>
 <div class="pane"><h2>Fluxo de caixa mensal</h2><div class="table-scroll"><table><thead><tr><th>Mês</th><th class="right">Entradas</th><th class="right">Saídas</th><th class="right">Resultado</th><th class="right">Caixa final</th><th>Observações</th></tr></thead><tbody id="cashflow"></tbody></table></div></div>
-<div class="pane" id="ajustes"><div class="section-head"><div><h2>Lançamentos personalizados</h2><p class="muted">Adicione rendimentos, compras, despesas inesperadas ou mudanças futuras; entram nos três cenários.</p></div></div>
+<div class="pane"><div class="section-head"><div><h2>Faturas programadas do Nubank</h2><p class="muted">São despesas futuras no fluxo de caixa, separadas das parcelas de empréstimo. Para corrigir um valor, exclua e adicione o lançamento em Lançamentos personalizados.</p></div></div><div id="billsOverview" class="bills-overview"></div><p class="micro">Não some estas faturas novamente aos gastos fixos. Não foi informado o dia exato do vencimento das faturas.</p></div>
+<div class="pane" id="ajustes"><div class="section-head"><div><h2>Lançamentos personalizados</h2><p class="muted">Adicione rendimentos, faturas, compras, despesas inesperadas ou mudanças futuras; entram nos três cenários.</p></div></div>
 <form id="entryForm" class="entryform"><label class="field">Mês<input id="entryMonth" type="month" required value="2026-11"></label><label class="field">Natureza<select id="entryType"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label class="field">Descrição<input id="entryName" maxlength="80" required placeholder="Ex.: manutenção do carro"></label><label class="field">Valor (R$)<input id="entryAmount" type="number" min=".01" step=".01" required></label><label class="field">Periodicidade<select id="entryRecurring"><option value="once">Uma vez</option><option value="monthly">Repetir até o fim do plano</option></select></label><button type="submit" class="primary">+ Adicionar</button></form>
 <div id="entryList" class="entry-list"></div></div>
 <div class="pane" id="nuvem"><div class="section-head"><div><h2>Sincronização privada</h2><p class="muted">GitHub Pages hospeda o aplicativo. O Firebase guarda o plano na sua conta Google, em um projeto Firebase independente.</p></div><span id="cloudBadge" class="pill">Modo local</span></div>
