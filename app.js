@@ -1,13 +1,13 @@
 (() => {
 'use strict';
 const KEY='pcsp_financeiro_v2', VERSION=2;
-const ids=['monthStart','horizon','cash','cost','costSep','reserve','fgts','acad','novComps','post','bonus','nubBal','nubPmt','newBal','newPmt','oldBal','oldPmt','bbLoan','bbRate','bbTerm','startPay'];
+const ids=['monthStart','horizon','cash','cost','costSep','reserve','fgts','acad','novIncome','novComps','post','bonus','nubBal','nubPmt','nubDue','nubRemain','newBal','newPmt','newDue','newRemain','oldBal','oldPmt','oldDue','oldRemain','bbLoan','bbRate','bbTerm','startPay'];
 const nums=new Set(ids.filter(x=>!['monthStart'].includes(x)));
 const $=id=>document.getElementById(id);
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const defaultP={monthStart:'2026-09',horizon:16,cash:0,cost:0,costSep:0,reserve:0,fgts:0,acad:0,novComps:2,post:0,bonus:0,nubBal:0,nubPmt:0,newBal:0,newPmt:0,oldBal:0,oldPmt:0,bbLoan:0,bbRate:1.8,bbTerm:60,startPay:1};
-let state={version:VERSION,premises:{...defaultP},entries:[]},selected='keep',latest=[];
+const defaultP={monthStart:'2026-09',horizon:16,cash:0,cost:0,costSep:0,reserve:0,fgts:0,acad:0,novIncome:0,novComps:2,post:0,bonus:0,nubBal:0,nubPmt:0,nubDue:0,nubRemain:0,newBal:0,newPmt:0,newDue:0,newRemain:0,oldBal:0,oldPmt:0,oldDue:0,oldRemain:0,bbLoan:0,bbRate:1.8,bbTerm:60,startPay:1};
+let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{}},selected='keep',latest=[];
 let onUpdate=()=>{};
 const money=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
 function validate(s){
@@ -18,22 +18,37 @@ function validate(s){
   const v=Number(s.premises?.[id]??p[id]);if(!Number.isFinite(v)||v<0||v>1e9)throw Error('Valor inválido: '+id);p[id]=v;
  }
  if(![12,16,24,36].includes(p.horizon)||![1,2,3].includes(p.novComps)||![36,48,60,72,84].includes(p.bbTerm)||![1,2].includes(p.startPay)||p.bbRate>100)throw Error('Prazo ou taxa fora dos limites.');
+ for(const id of ['nubDue','newDue','oldDue'])if(!Number.isInteger(p[id])||p[id]>31)throw Error('Dia de vencimento inválido.');
+ for(const id of ['nubRemain','newRemain','oldRemain'])if(!Number.isInteger(p[id])||p[id]>360)throw Error('Quantidade de parcelas restantes inválida.');
+ const accounts={};for(const k of ['nubank','bb','bradesco']){
+  const v=Number(s.accounts?.[k]??0);
+  if(!Number.isFinite(v)||v<0||v>1e9)throw Error('Saldo bancário inválido: '+k);
+  accounts[k]=money(v);
+ }
+ const snapshotDate=String(s.snapshotDate||'').slice(0,10);
+ if(snapshotDate&&!/^20\d{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/.test(snapshotDate))throw Error('Data de atualização inválida.');
+ const loanRefs={};
+ for(const k of ['nub','new','old'])loanRefs[k]=String(s.loanRefs?.[k]??'').slice(0,100);
  if(!Array.isArray(s.entries)||s.entries.length>250)throw Error('Quantidade inválida de lançamentos.');
  const entries=s.entries.map((x,i)=>{
   const month=String(x.month||''),name=String(x.name||'').trim().slice(0,80),amount=Number(x.amount),type=x.type,recurring=x.recurring;
   if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)||!name||!Number.isFinite(amount)||amount<=0||amount>1e9||!['income','expense'].includes(type)||!['once','monthly'].includes(recurring))throw Error('Lançamento inválido: '+(i+1));
   return {id:String(x.id||('row-'+i)).slice(0,48),month,name,amount:money(amount),type,recurring};
  });
- return {version:VERSION,premises:p,entries};
+ return {version:VERSION,premises:p,entries,accounts,snapshotDate,loanRefs};
 }
-function setForm(p){for(const id of ids)$(id).value=p[id];}
+function setForm(p){
+ for(const id of ids)$(id).value=p[id];
+ for(const [key,id] of [['nubank','accountNubank'],['bb','accountBB'],['bradesco','accountBradesco']])
+  $(id).value=state.accounts?.[key]??0;
+}
 function readForm(){const p={};for(const id of ids){p[id]=id==='monthStart'?$(id).value:Number($(id).value);if(id!=='monthStart'&&(!Number.isFinite(p[id])||p[id]<0))p[id]=0;}return p;}
 function store(){try{localStorage.setItem(KEY,JSON.stringify(state));$('saveStatus').textContent='Salvo neste dispositivo';$('saveStatus').className='localstate';}catch(e){$('saveStatus').textContent='Armazenamento local indisponível';$('saveStatus').className='localstate negative';}}
 function replace(input){const valid=validate(input);state=valid;setForm(state.premises);store();render();document.dispatchEvent(new CustomEvent('fin-changed'));}
 function mm(ym,delta){const [y,m]=ym.split('-').map(Number);const d=new Date(Date.UTC(y,m-1+delta,1));return d.toISOString().slice(0,7);}
 function label(ym){const [y,m]=ym.split('-').map(Number);return new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(y,m-1,1))).replace('.','');}
 function installment(principal,rate,term){if(principal<=0)return 0;const r=rate/100;if(!r)return principal/term;const pow=Math.pow(1+r,term);return principal*r*pow/(pow-1);}
-function salary(ym,p){if(ym==='2026-11')return p.acad*p.novComps;if(ym>='2026-12'&&ym<='2027-03')return p.acad;if(ym>='2027-04')return p.post;return 0;}
+function salary(ym,p){if(ym==='2026-11')return p.novIncome>0?p.novIncome:p.acad*p.novComps;if(ym>='2026-12'&&ym<='2027-03')return p.acad;if(ym>='2027-04')return p.post;return 0;}
 function simulate(kind,p,entries){
  const months=Array.from({length:p.horizon},(_,i)=>mm(p.monthStart,i));
  const debts=p.nubBal+p.newBal+p.oldBal, exp=p.nubBal+p.newBal, payoff=kind==='all'?debts:kind==='expensive'?exp:0;
@@ -49,7 +64,18 @@ function simulate(kind,p,entries){
   if(ym==='2027-12')add(income,'13º/extra informado',p.bonus);
   for(const e of entries){if(e.month===ym||(e.recurring==='monthly'&&e.month<=ym))add(e.type==='income'?income:expense,e.name,e.amount);}
   if(i===0){add(income,'Crédito BB liberado',bb);add(expense,'Quitação antecipada de contratos',payoff);}
-  if(oldPmt>0)add(expense,kind==='keep'?'Parcelas dos 3 contratos':'Parcela do Bradesco antigo',oldPmt);
+  const active=count=>count===0||i<count;
+  const due=day=>day>0?'dia '+day:'dia não informado';
+  if(kind==='keep'){
+   const current=[
+    active(p.nubRemain)?['Nubank',p.nubPmt,p.nubDue]:null,
+    active(p.newRemain)?['Bradesco 02',p.newPmt,p.newDue]:null,
+    active(p.oldRemain)?['Bradesco 01',p.oldPmt,p.oldDue]:null
+   ].filter(Boolean).filter(x=>x[1]>0);
+   if(current.length)add(expense,'Parcelas dos 3 contratos: '+current.map(x=>x[0]+' ('+due(x[2])+')').join(' · '),current.reduce((a,x)=>a+x[1],0));
+  }else if(kind==='expensive'&&active(p.oldRemain)){
+   add(expense,'Parcela Bradesco 01 ('+due(p.oldDue)+')',p.oldPmt);
+  }
   if(kind!=='keep'&&i>=p.startPay&&i<p.startPay+p.bbTerm)add(expense,'Parcela consignado BB',newPmt);
   const inc=money(income.reduce((s,x)=>s+x.amount,0)),out=money(expense.reduce((s,x)=>s+x.amount,0));
   balance=money(balance+inc-out);
@@ -78,6 +104,18 @@ function renderChart(s,p){
  const axis=s.rows.filter((_,i)=>i===0||i===s.rows.length-1||i%Math.max(1,Math.round(s.rows.length/6))===0).map(x=>{const i=s.rows.indexOf(x);return '<text x="'+sx(i)+'" y="'+(h-8)+'" text-anchor="middle">'+esc(label(x.month))+'</text>';}).join('');
  $('chart').innerHTML='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+lines+'<line x1="'+l+'" y1="'+reserveY+'" x2="'+(w-r)+'" y2="'+reserveY+'" stroke="#f8c974" stroke-width="1.5" stroke-dasharray="6 5"/><polyline fill="none" stroke="'+stroke+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+point.join(' ')+'"/>'+s.rows.map((row,i)=>'<circle cx="'+sx(i)+'" cy="'+sy(row.balance)+'" r="3" fill="'+(row.balance<0?'#ff829c':stroke)+'"/>').join('')+axis+'</svg>';
 }
+function showAccounts(){
+ const a=state.accounts||{};
+ const total=money((Number(a.nubank)||0)+(Number(a.bb)||0)+(Number(a.bradesco)||0));
+ $('accountsTotal').textContent='Total das contas: '+brl(total)+(state.snapshotDate?' · posição em '+state.snapshotDate.split('-').reverse().join('/'):'');
+}
+function showBills(){
+ const bills=state.entries.filter(e=>e.type==='expense'&&/fatura.*nubank/i.test(e.name)&&e.recurring==='once').sort((a,b)=>a.month.localeCompare(b.month));
+ const amount=money(bills.reduce((t,e)=>t+e.amount,0));
+ $('billsOverview').innerHTML=bills.length?
+ '<div class="bills-grid">'+bills.map(e=>'<div class="bill-card"><span>'+esc(label(e.month))+'</span><strong>'+brl(e.amount)+'</strong></div>').join('')+'</div><p class="small">Total de faturas programadas: <strong>'+brl(amount)+'</strong></p>':
+ '<p class="small">Nenhuma fatura cadastrada. Você pode importar o arquivo de atualização ou adicionar despesas com a descrição “Fatura Nubank”.</p>';
+}
 function showEntries(){
  $('entryList').innerHTML=state.entries.length?state.entries.map(e=>'<div class="entry-row"><div><b>'+esc(e.name)+'</b><small>'+esc(label(e.month))+' · '+(e.type==='income'?'Receita':'Despesa')+' · '+(e.recurring==='monthly'?'Mensal':'Uma vez')+'</small></div><div><strong class="'+(e.type==='income'?'positive':'negative')+'">'+(e.type==='income'?'+':'−')+brl(e.amount)+'</strong> <button type="button" data-remove="'+esc(e.id)+'" title="Excluir lançamento" aria-label="Excluir '+esc(e.name)+'">✕</button></div></div>').join(''):'<p class="small">Nenhum lançamento adicional. Adicione um evento para refinar as projeções.</p>';
 }
@@ -89,6 +127,9 @@ function render(){
  if(p.bbLoan>0&&!p.bbTerm)warn.push('Defina o prazo do consignado.');
  if(p.bbLoan===0)warn.push('Sem valor de crédito: as estratégias de consolidação quitam as dívidas diretamente com seu caixa.');
  if(p.nubBal+p.newBal+p.oldBal===0&&p.bbLoan>0)warn.push('Você informou empréstimo novo, mas nenhuma dívida para quitar. O valor fica como crédito de caixa com parcelas futuras.');
+ const accountSum=money((state.accounts?.nubank||0)+(state.accounts?.bb||0)+(state.accounts?.bradesco||0));
+ if(accountSum>0&&Math.abs(p.cash-accountSum)>.02)warn.push('O caixa inicial está diferente da soma das contas. Use “Usar total das contas como caixa inicial” se quiser conciliar.');
+ if(p.cost===0)warn.push('Gastos fixos não foram informados: a projeção de sobra de caixa pode estar superestimada. Faturas e parcelas já são lançadas separadamente.');
  if(p.monthStart<'2026-10')warn.push('O plano começa em um mês passado; substitua as estimativas por lançamentos reais para não confundir projeção com histórico.');
  $('errors').hidden=warn.length===0;$('errors').textContent=warn.join(' ');
  latest=['keep','expensive','all'].map(k=>simulate(k,p,state.entries));
@@ -110,13 +151,27 @@ function render(){
   if(s.monthlyDebt>latest[0].monthlyDebt)notes.push(['warn','Comprometimento mensal '+brl(s.monthlyDebt-latest[0].monthlyDebt)+' acima de manter as parcelas atuais.']);
  }
  notes.push(['','Condições do modelo: quitações e liberação do BB no primeiro mês; contratos mantidos pagos desde o primeiro mês; BB a partir de '+p.startPay+' mês(es).']);
+ if(state.loanRefs&&Object.values(state.loanRefs).some(Boolean))notes.push(['','Referências informadas dos contratos: '+[['old','Bradesco 01'],['new','Bradesco 02'],['nub','Nubank']].filter(x=>state.loanRefs[x[0]]).map(x=>x[1]+': '+state.loanRefs[x[0]]).join(' · ')+'. Confira se as parcelas restantes projetadas estão corretas.']);
  notes.push(['','Não é possível comparar o custo total dos contratos antigos sem juros e prazos remanescentes; os '+brl(s.bbInterest)+' de juros representam só o novo BB (sem tarifas não informadas).']);
  $('insights').innerHTML=notes.map(n=>'<div class="insight '+n[0]+'">'+esc(n[1])+'</div>').join('');
  $('cashflow').innerHTML=s.rows.map(x=>'<tr><td><b>'+esc(label(x.month))+'</b></td><td class="right positive">'+brl(x.inc)+'</td><td class="right negative">'+brl(x.out)+'</td><td class="right '+(x.net<0?'negative':'positive')+'">'+brl(x.net)+'</td><td class="right '+(x.balance<0?'negative':'')+'"><b>'+brl(x.balance)+'</b></td><td class="note-cell">'+esc([...x.income,...x.expense].map(y=>y.name).join(' · ')||'—')+'</td></tr>').join('');
- renderChart(s,p);showEntries();
+ renderChart(s,p);showEntries();showAccounts();showBills();
  }catch(e){$('errors').hidden=false;$('errors').textContent='Falha na simulação: '+e.message;}
 }
-let task;function changed(){clearTimeout(task);task=setTimeout(()=>{state.premises=readForm();store();render();onUpdate();document.dispatchEvent(new CustomEvent('fin-changed'));},150);}
+let task;function changed(e){
+ const account=e?.target?.dataset?.account;
+ if(account&&['nubank','bb','bradesco'].includes(account)){
+  const v=Number(e.target.value);
+  state.accounts[account]=Number.isFinite(v)&&v>=0?money(v):0;
+ }
+ clearTimeout(task);
+ task=setTimeout(()=>{state.premises=readForm();store();render();onUpdate();document.dispatchEvent(new CustomEvent('fin-changed'));},150);
+}
+$('useAccounts').addEventListener('click',()=>{
+ const a=state.accounts||{};
+ $('cash').value=money((a.nubank||0)+(a.bb||0)+(a.bradesco||0));
+ changed();
+});
 document.querySelectorAll('aside input,aside select').forEach(e=>e.addEventListener('input',changed));
 $('scenarioCards').addEventListener('click',e=>{const n=e.target.closest('[data-scenario]');if(n){selected=n.dataset.scenario;render();}});
 $('entryForm').addEventListener('submit',e=>{

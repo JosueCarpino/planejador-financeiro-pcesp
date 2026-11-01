@@ -47,7 +47,7 @@ function changeScenario(kind){
 }
 changeScenario('expensive');
 assert.match(firstRow()[4],/790,00/,'Consolidacao parcial deve manter a parcela do Bradesco antigo');
-assert.match(get('cashflow').innerHTML,/Parcela do Bradesco antigo/);
+assert.match(get('cashflow').innerHTML,/Parcela Bradesco 01/);
 changeScenario('all');
 assert.match(firstRow()[4],/600,00/,'Consolidacao total deve quitar 1000 com credito de 800');
 changeScenario('keep');
@@ -63,4 +63,25 @@ app.replace({premises:{...p,nubPmt:0,newPmt:0,oldPmt:0},entries:[
 assert.ok(get('entryList').innerHTML.includes('&lt;img'),'Deve escapar o nome do lancamento');
 assert.ok(!get('entryList').innerHTML.includes('<img '),'Nao pode injetar tag HTML nos lancamentos');
 assert.match(firstRow()[4],/775,00/,'Lancamento ad hoc deve afetar caixa');
+// Valores de teste inteiramente ficticios (nao usar dados financeiros reais no GitHub).
+const updated={
+ premises:{...p,monthStart:'2026-11',cash:3100,costSep:0,cost:0,acad:4900,
+  novIncome:7000,post:4900,nubPmt:500,nubRemain:1,newPmt:0,oldPmt:0,
+  nubDue:27,newDue:30,oldDue:25},
+ accounts:{nubank:1000,bb:2000,bradesco:100},snapshotDate:'2028-01-01',
+ loanRefs:{nub:'12 parcelas',new:'inicio do contrato',old:'em andamento'},
+ entries:[
+  {id:'bill1',month:'2026-11',name:'Fatura Nubank',amount:500,type:'expense',recurring:'once'},
+  {id:'bill2',month:'2026-12',name:'Fatura Nubank',amount:400,type:'expense',recurring:'once'}
+ ]
+};
+app.replace(updated);
+assert.match(firstRow()[4],/9.100,00/,'Novembro recebe salario especial uma unica vez, desconta fatura e emprestimo');
+const nextRow=(get('cashflow').innerHTML.split('</tr>')[1]||'');
+assert.match(nextRow,/13.600,00/,'O emprestimo com uma parcela restante deve terminar antes de dezembro');
+assert.match(get('billsOverview').innerHTML,/500,00/,'Calendario de faturas deve aparecer');
+assert.match(get('accountsTotal').textContent,/3.100,00/,'Contas somadas sem misturar quitacoes');
+assert.equal(app.get().accounts.bb,2000);
+assert.equal(app.get().premises.novIncome,7000);
+
 console.log('OK: app inicializa; tres estrategias; parcelas mantidas; entrada avulsa; validacao; escaping.');
