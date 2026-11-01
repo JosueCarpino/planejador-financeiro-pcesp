@@ -84,4 +84,17 @@ assert.match(get('accountsTotal').textContent,/3.100,00/,'Contas somadas sem mis
 assert.equal(app.get().accounts.bb,2000);
 assert.equal(app.get().premises.novIncome,7000);
 
+// A importacao de atualizacao parcial nao pode apagar o planejamento ja salvo.
+app.replace({premises:{...p,monthStart:'2026-11',cost:650,costSep:0},entries:[
+ {id:'rent',month:'2026-11',name:'Despesa fixa',amount:650,type:'expense',recurring:'monthly'},
+ {id:'old-card',month:'2026-11',name:'Fatura Nubank',amount:300,type:'expense',recurring:'once'}
+]});
+const merged=app.mergeSnapshot({updateMode:'merge-snapshot',
+ premises:{cash:2000,novIncome:7000},accounts:{bb:1000},
+ entries:[{id:'new-card',month:'2026-11',name:'Fatura Nubank',amount:500,type:'expense',recurring:'once'}]});
+assert.equal(merged.premises.cost,650,'Preservar despesas fixas existentes');
+assert.equal(merged.premises.cash,2000,'Atualizar caixa da importacao parcial');
+assert.equal(merged.entries.filter(e=>e.name==='Fatura Nubank'&&e.month==='2026-11').length,1,'Substituir fatura antiga sem duplicar');
+assert.equal(merged.entries.find(e=>e.name==='Despesa fixa').amount,650,'Preservar outros lancamentos');
+
 console.log('OK: app inicializa; tres estrategias; parcelas mantidas; entrada avulsa; validacao; escaping.');
