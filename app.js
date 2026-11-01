@@ -7,7 +7,7 @@ const $=id=>document.getElementById(id);
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const defaultP={monthStart:'2026-09',horizon:16,cash:0,cost:0,costSep:0,reserve:0,fgts:0,acad:0,novIncome:0,novComps:2,post:0,bonus:0,nubBal:0,nubPmt:0,nubDue:0,nubRemain:0,newBal:0,newPmt:0,newDue:0,newRemain:0,oldBal:0,oldPmt:0,oldDue:0,oldRemain:0,bbLoan:0,bbRate:1.8,bbTerm:60,startPay:1};
-let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{}},selected='keep',latest=[];
+let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{},payroll:{}},selected='keep',latest=[];
 let onUpdate=()=>{};
 const money=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
 function validate(s){
@@ -29,13 +29,15 @@ function validate(s){
  if(snapshotDate&&!/^20\d{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/.test(snapshotDate))throw Error('Data de atualização inválida.');
  const loanRefs={};
  for(const k of ['nub','new','old'])loanRefs[k]=String(s.loanRefs?.[k]??'').slice(0,100);
+ const payroll={nextDate:String(s.payroll?.nextDate||'').slice(0,10),cadence:String(s.payroll?.cadence||'').slice(0,90)};
+ if(payroll.nextDate&&!/^20\d{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/.test(payroll.nextDate))throw Error('Data do próximo pagamento inválida.');
  if(!Array.isArray(s.entries)||s.entries.length>250)throw Error('Quantidade inválida de lançamentos.');
  const entries=s.entries.map((x,i)=>{
   const month=String(x.month||''),name=String(x.name||'').trim().slice(0,80),amount=Number(x.amount),type=x.type,recurring=x.recurring;
   if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)||!name||!Number.isFinite(amount)||amount<=0||amount>1e9||!['income','expense'].includes(type)||!['once','monthly'].includes(recurring))throw Error('Lançamento inválido: '+(i+1));
   return {id:String(x.id||('row-'+i)).slice(0,48),month,name,amount:money(amount),type,recurring};
  });
- return {version:VERSION,premises:p,entries,accounts,snapshotDate,loanRefs};
+ return {version:VERSION,premises:p,entries,accounts,snapshotDate,loanRefs,payroll};
 }
 function setForm(p){
  for(const id of ids)$(id).value=p[id];
@@ -58,8 +60,8 @@ function simulate(kind,p,entries){
  const rows=months.map((ym,i)=>{
   const income=[],expense=[];
   const add=(to,name,amount)=>{if(amount>0)to.push({name,amount:money(amount)});};
-  add(expense,i===0?'Gastos do primeiro mês':'Gastos fixos',i===0?p.costSep:p.cost);
-  add(income,'Remuneração prevista',salary(ym,p));
+  add(expense,i===0&&p.costSep>0?'Gastos do primeiro mês':'Gastos fixos',i===0&&p.costSep>0?p.costSep:p.cost);
+  add(income,ym==='2026-11'&&state.payroll?.nextDate?'Pagamento PCESP ('+state.payroll.nextDate.split('-').reverse().join('/')+')':'Remuneração prevista',salary(ym,p));
   if(ym==='2026-10')add(income,'FGTS estimado',p.fgts);
   if(ym==='2027-12')add(income,'13º/extra informado',p.bonus);
   for(const e of entries){if(e.month===ym||(e.recurring==='monthly'&&e.month<=ym))add(e.type==='income'?income:expense,e.name,e.amount);}
@@ -151,6 +153,7 @@ function render(){
   if(s.monthlyDebt>latest[0].monthlyDebt)notes.push(['warn','Comprometimento mensal '+brl(s.monthlyDebt-latest[0].monthlyDebt)+' acima de manter as parcelas atuais.']);
  }
  notes.push(['','Condições do modelo: quitações e liberação do BB no primeiro mês; contratos mantidos pagos desde o primeiro mês; BB a partir de '+p.startPay+' mês(es).']);
+ if(state.payroll?.cadence)notes.push(['','Periodicidade informada dos salários posteriores: '+state.payroll.cadence+'. Datas de compensação bancária podem variar.']);
  if(state.loanRefs&&Object.values(state.loanRefs).some(Boolean))notes.push(['','Referências informadas dos contratos: '+[['old','Bradesco 01'],['new','Bradesco 02'],['nub','Nubank']].filter(x=>state.loanRefs[x[0]]).map(x=>x[1]+': '+state.loanRefs[x[0]]).join(' · ')+'. Confira se as parcelas restantes projetadas estão corretas.']);
  notes.push(['','Não é possível comparar o custo total dos contratos antigos sem juros e prazos remanescentes; os '+brl(s.bbInterest)+' de juros representam só o novo BB (sem tarifas não informadas).']);
  $('insights').innerHTML=notes.map(n=>'<div class="insight '+n[0]+'">'+esc(n[1])+'</div>').join('');
