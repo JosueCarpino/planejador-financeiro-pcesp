@@ -188,7 +188,40 @@ $('entryForm').addEventListener('submit',e=>{
 $('entryList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b)return;state.entries=state.entries.filter(x=>x.id!==b.dataset.remove);store();render();document.dispatchEvent(new CustomEvent('fin-changed'));});
 function download(name,text,mime){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([text],{type:mime}));a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),500);}
 $('exportBtn').addEventListener('click',()=>download('financeiro-pcesp-backup.json',JSON.stringify(state,null,2),'application/json'));
-$('importFile').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>1000000)throw Error('Arquivo acima de 1 MB.');const data=validate(JSON.parse(await f.text()));if(confirm('Substituir todo o plano local pelo conteúdo do arquivo?'))replace(data);}catch(e){alert('Não foi possível importar: '+e.message);}finally{$('importFile').value='';}});
+function mergeSnapshot(patch){
+ if(!patch || patch.updateMode!=='merge-snapshot'||!patch.premises||typeof patch.premises!=='object')throw Error('Arquivo de atualização incompatível.');
+ if(!Array.isArray(patch.entries)||patch.entries.length>250)throw Error('Faturas inválidas.');
+ for(const k of Object.keys(patch.premises))if(!ids.includes(k))throw Error('Campo desconhecido: '+k);
+ const affected=new Set(patch.entries.map(e=>e.month));
+ const retained=state.entries.filter(e=>!(
+  e.type==='expense' && /(?:fatura.*nubank|nubank.*fatura)/i.test(e.name) &&
+  affected.has(e.month)
+ ));
+ return validate({
+  version:VERSION,
+  premises:{...state.premises,...patch.premises},
+  accounts:{...state.accounts,...patch.accounts},
+  entries:[...retained,...patch.entries],
+  snapshotDate:patch.snapshotDate||state.snapshotDate,
+  loanRefs:{...state.loanRefs,...patch.loanRefs},
+  payroll:{...state.payroll,...patch.payroll}
+ });
+}
+$('importFile').addEventListener('change',async e=>{
+ const file=e.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>1000000)throw Error('Arquivo acima de 1 MB.');
+  const raw=JSON.parse(await file.text());
+  if(raw.updateMode==='merge-snapshot'){
+   const data=mergeSnapshot(raw);
+   if(confirm('Atualizar os saldos, empréstimos, salário e faturas informados, PRESERVANDO outros lançamentos e gastos fixos do plano? Faça um backup JSON antes de continuar.'))replace(data);
+  }else{
+   const data=validate(raw);
+   if(confirm('Substituir TODO o plano local pelo conteúdo do arquivo? Faça backup JSON primeiro.'))replace(data);
+  }
+ }catch(err){alert('Não foi possível importar: '+err.message);}
+ finally{$('importFile').value='';}
+});
 $('resetBtn').addEventListener('click',()=>{if(confirm('Zerar todas as premissas e lançamentos deste dispositivo? Faça backup primeiro.'))replace({premises:defaultP,entries:[]});});
 $('exampleBtn').addEventListener('click',()=>{
  if(!confirm('Substituir seus dados atuais por números fictícios de demonstração?'))return;
@@ -202,5 +235,5 @@ $('csvBtn').addEventListener('click',()=>{
 });
 try{const saved=localStorage.getItem(KEY);if(saved)state=validate(JSON.parse(saved));}catch(e){console.warn('Não foi possível restaurar dados locais:',e.message);}
 setForm(state.premises);render();
-window.FIN_APP={get:()=>JSON.parse(JSON.stringify(state)),replace,changeListener:fn=>{onUpdate=fn;},validate};
+window.FIN_APP={get:()=>JSON.parse(JSON.stringify(state)),replace,mergeSnapshot,changeListener:fn=>{onUpdate=fn;},validate};
 })();
