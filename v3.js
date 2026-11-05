@@ -179,11 +179,11 @@
    card('Parcelas mensais',fmt(ls.reduce((a,e)=>a+e.payment,0)),'Sem faturas de cartão')+
    card('Total restante estimado',fmt(ls.reduce((a,e)=>a+(e.remaining?e.remaining*e.payment:0),0)),'Contratos com prazo conhecido');
   $('v3Debts').innerHTML=ls.map(x=>{
-   const total=s.loanTotals?.[x.id]||0,paid=total?Math.max(0,total-x.remaining):null,progress=total?Math.min(100,Math.round(paid/total*100)):0;
+   const total=s.loanTotals?.[x.id]||0,hasProgress=total>0&&x.remaining>0&&x.remaining<=total,paid=hasProgress?total-x.remaining:null,progress=hasProgress?Math.min(100,Math.round(paid/total*100)):0;
    return '<article class="v3-debt-card"><div class="v3-section-head"><h3>'+esc(x.name)+'</h3><span class="v3-pill">Dia '+(x.due||'—')+'</span></div>'+
     '<span class="v3-subtle">Quitação antecipada informada</span><strong class="v3-debt-value">'+fmt(x.balance)+'</strong>'+
     '<div class="v3-debt-pair"><span>Parcela<b>'+fmt(x.payment)+'</b></span><span>Restantes<b>'+(x.remaining||'Não informado')+'</b></span></div>'+
-    (total?'<div class="v3-progress"><span style="width:'+progress+'%"></span></div><p class="v3-subtle">'+paid+' de '+total+' pagas, se as parcelas restantes estiverem corretas.</p>':'<p class="v3-subtle">Informe o prazo original para visualizar o progresso.</p>')+
+    (hasProgress?'<div class="v3-progress"><span style="width:'+progress+'%"></span></div><p class="v3-subtle">'+paid+' de '+total+' pagas, se as parcelas restantes estiverem corretas.</p>':'<p class="v3-subtle">Informe o prazo original para visualizar o progresso.</p>')+
     '<button type="button" class="v3-secondary" data-focus="'+x.focus+'">Editar contrato</button></article>';
   }).join('');
   document.querySelectorAll('[data-total]').forEach(el=>{if(document.activeElement!==el)el.value=s.loanTotals?.[el.dataset.total]||'';});
