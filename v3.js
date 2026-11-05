@@ -223,6 +223,13 @@
    recurring:$('v3EditRecurring').value,status:$('v3EditStatus').value});
   try{API.replace(s);$('v3EditDialog').close();}catch(err){alert('Verifique os dados: '+err.message);}
  }
- function start(){try{init();}catch(err){console.error('Erro ao montar a interface 3.0; dados preservados na versão anterior.',err);}}
+ function start(){
+  try{
+   init();
+   if(typeof navigator!=='undefined'&&'serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(err=>console.warn('Modo offline indisponível',err));
+   }
+  }catch(err){console.error('Erro ao montar a interface 3.0; dados preservados na versão anterior.',err);}
+ }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
