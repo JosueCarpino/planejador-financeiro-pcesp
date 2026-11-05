@@ -208,3 +208,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
  .top.v3-top{padding:12px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+.v3-amort-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:18px 0 15px}
+.v3-amort-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin:16px 0}
+.v3-amort-overview .v3-stat{background:var(--v3-bg);box-shadow:none}
+.v3-amort-chart{margin:16px 0;color:var(--v3-accent);border:1px solid var(--v3-line);background:var(--v3-bg);border-radius:12px;padding:16px}
+.v3-amort-chart svg{display:block;width:100%;height:auto}
+.v3-amort-chart .v3-subtle{margin:9px 0 0}
+.v3-amort-details{margin-top:18px}
+.v3-amort-details summary{cursor:pointer;font-weight:700;padding:14px;border:1px solid var(--v3-line);border-radius:9px;background:var(--v3-surface2)}
+.v3-amort-details[open] summary{border-radius:9px 9px 0 0}
+.v3-disclaimer{font-size:12px;line-height:1.6;color:var(--v3-muted);margin-top:18px}
+@media(max-width:1120px){.v3-amort-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.v3-amort-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.v3-amort-fields{grid-template-columns:1fr}.v3-amort-overview{grid-template-columns:1fr 1fr}}
