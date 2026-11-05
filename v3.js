@@ -123,7 +123,9 @@
   const t=$('cloudStatus').textContent||'',n=$('v3CloudState');
   const ok=/confirmado|recuperado da nuvem/i.test(t),pending=/pendente|Sincronizando|Conferindo e enviando/i.test(t);
   const error=/Erro|Falha|Conflito|Não foi possível|indisponível|negado/i.test(t);
-  n.textContent=ok?'● Sincronizado na nuvem':pending?'◌ Sincronizando':error?'● Atenção ao salvamento':'● Salvo neste dispositivo';
+  let confirmedTime='';
+  try{const saved=localStorage.getItem('pcsp-cloud-last-confirmed');if(saved){const d=new Date(saved);if(Number.isFinite(d.getTime()))confirmedTime=' · '+d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}}catch{}
+  n.textContent=ok?'● Nuvem sincronizada'+confirmedTime:pending?'◌ Sincronizando':error?'● Atenção ao salvamento':'● Salvo neste dispositivo';
   n.dataset.status=ok?'ok':pending?'pending':error?'error':'local';
   n.title=t;
  }
