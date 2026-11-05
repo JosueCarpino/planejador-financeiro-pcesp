@@ -12,6 +12,7 @@ evalFile('app.js');
 evalFile('amortization.js');
 evalFile('v3.js');
 evalFile('v3-advanced.js');
+evalFile('v3-calendar.js');
 win.document.dispatchEvent(new win.Event('DOMContentLoaded'));
 const document=win.document;
 setTimeout(()=>{
@@ -21,6 +22,7 @@ setTimeout(()=>{
   assert.ok(must('v3Overview').querySelectorAll('.v3-stat').length>=4);
   assert.ok(must('v3Debts').querySelectorAll('.v3-debt-card').length===3);
   assert.ok(must('v3Amort').querySelectorAll('[data-adv]').length>=7);
+  assert.ok(must('v3CalendarGrid').querySelectorAll('.v3-cal-cell').length>=28);
   assert.equal(must('view-inicio').hidden,false);
   const app=win.FIN_APP;
   const s=app.get();
