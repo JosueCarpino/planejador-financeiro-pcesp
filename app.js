@@ -121,6 +121,18 @@ function renderChart(s,p){
  const reserveY=sy(p.reserve);
  const axis=s.rows.filter((_,i)=>i===0||i===s.rows.length-1||i%Math.max(1,Math.round(s.rows.length/6))===0).map(x=>{const i=s.rows.indexOf(x);return '<text x="'+sx(i)+'" y="'+(h-8)+'" text-anchor="middle">'+esc(label(x.month))+'</text>';}).join('');
  $('chart').innerHTML='<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+lines+'<line x1="'+l+'" y1="'+reserveY+'" x2="'+(w-r)+'" y2="'+reserveY+'" stroke="#f8c974" stroke-width="1.5" stroke-dasharray="6 5"/><polyline fill="none" stroke="'+stroke+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" points="'+point.join(' ')+'"/>'+s.rows.map((row,i)=>'<circle cx="'+sx(i)+'" cy="'+sy(row.balance)+'" r="3" fill="'+(row.balance<0?'#ff829c':stroke)+'"/>').join('')+axis+'</svg>';
+ const target=$('chart');
+ if(typeof target.querySelectorAll==='function'&&typeof document.createElementNS==='function'){
+  target.querySelectorAll('circle').forEach((circle,i)=>{
+   const row=s.rows[i];if(!row)return;
+   circle.setAttribute('tabindex','0');
+   circle.setAttribute('aria-label',label(row.month)+': '+brl(row.balance));
+   const title=document.createElementNS('http://www.w3.org/2000/svg','title');
+   title.textContent=label(row.month)+' · caixa previsto: '+brl(row.balance);
+   circle.append(title);
+  });
+ }
+
 }
 function showAccounts(){
  const a=state.accounts||{};
