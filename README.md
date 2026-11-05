@@ -1,10 +1,38 @@
 # Planejador Financeiro PCESP
 
+## Versão 3.0 — interface e fluxo de uso
+
+O site permanece independente do TAF e utiliza o mesmo documento privado do Firebase do próprio financeiro (projeto financas-1c48a). A atualização **não apaga, migra nem modifica automaticamente** o documento remoto. Novos campos são opcionais e backups anteriores continuam legíveis.
+
+- **Início:** saldos das contas, caixa mensal previsto, dívida para quitação, alertas e compromissos.
+- **Transações:** busca, filtros, categorias, dia de vencimento, edição, exclusão, marcação informativa de pago e faturas.
+- **Calendário:** visualiza somente vencimentos com dia informado; não presume datas bancárias nem compensações.
+- **Contas:** atualização dos saldos bancários informados.
+- **Dívidas:** cartão de cada contrato, quitação informada, parcela, dia de vencimento e progresso quando o prazo original é conhecido.
+- **Simulador:** comparação dos três cenários já existentes e **calculadora separada** de amortizações extras de contratos Price, incluindo prazo original de 96 meses.
+- **Ajustes:** rendas, despesas, importação/exportação JSON, exportação CSV, conta Google e sincronização manual.
+- **Tema claro/escuro**, navegação inferior no celular, cartões de fluxo mensal expansíveis, visualização responsiva e PWA instalável em navegadores compatíveis.
+
+### Importante: o que os cálculos não garantem
+
+1. O **saldo de caixa projetado** não é extrato bancário nem patrimônio líquido.
+2. O estado "Pago" de um lançamento é **informativo**: não debita ou credita automaticamente as contas. Atualize o saldo real com base no banco; mantenha a data do saldo consistente para evitar dupla contabilização.
+3. O calendário só exibe vencimentos detalhados quando o dia foi informado. Datas especiais do serviço público e compensação bancária não são calculadas automaticamente.
+4. O simulador de amortização usa um modelo Price com pagamento extra aplicado ao principal. A amortização efetiva do banco pode ter outros cálculos, tarifas, regras e datas. **Não substitui CET, contrato nem demonstrativo oficial**.
+5. O PWA armazena **somente arquivos estáticos públicos** para abrir o site offline. Dados pessoais ficam no navegador e no Firestore. A sincronização requer internet.
+6. O banco não tem conflito automático entre dois dispositivos: o aplicativo exige conferência da revisão remota antes de cada gravação e confirma o resultado no servidor. Exporte backup privado antes de importar ou sobrescrever.
+
+### Testes automatizados
+
+O pipeline do GitHub executa verificações de sintaxe, regressões das simulações Price e testes DOM da interface com valores fictícios. O site só é publicado quando todas as verificações passam.
+
+---
+
 Aplicativo web **independente**, hospedado em GitHub Pages, com opção de armazenamento privado pelo Firebase Authentication + Cloud Firestore. Não utiliza código, projeto Firebase ou banco de dados do painel TAF.
 
 **Site:** https://josuecarpino.github.io/planejador-financeiro-pcesp/
 
-**Firebase Web configurado:** projeto exclusivo `financas-1c48a`, via `firebase-config.js`. A sincronização depende ainda de ativar Google Authentication e publicar as regras no Firestore.
+**Firebase Web configurado:** projeto exclusivo `financas-1c48a`, via `firebase-config.js`. Para utilizar a sincronização, o Google Authentication, o domínio autorizado e as regras de acesso precisam permanecer ativos no Console.
 
 ## O que o aplicativo faz
 
