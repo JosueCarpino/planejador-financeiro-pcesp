@@ -126,7 +126,13 @@
   n.dataset.status=ok?'ok':pending?'pending':error?'error':'local';
   n.title=t;
  }
- function refresh(){renderHome();renderLedger();renderAccounts();renderDebts();updateSync();}
+ function refresh(){renderHome();renderLedger();renderAccounts();renderDebts();renderMobileFlow();updateSync();}
+ function renderMobileFlow(){
+  const el=$('v3CashCards');if(!el)return;
+  const selected=$('scenarioCards').querySelector('[aria-pressed="true"]')?.dataset.scenario||'keep';
+  const rows=API.getScenario(selected).rows;
+  el.innerHTML=rows.map(x=>'<details class="v3-flow-card"><summary><span>'+esc(pretty(x.month))+'</span><span class="'+(x.net<0?'negative':'positive')+'">'+fmt(x.net)+'</span><b>'+fmt(x.balance)+'</b></summary><div><p>Entradas '+fmt(x.inc)+' · Saídas '+fmt(x.out)+'</p><ul>'+[...x.income,...x.expense].map(a=>'<li>'+esc(a.name)+' — '+fmt(a.amount)+'</li>').join('')+'</ul></div></details>').join('');
+ }
  function renderHome(){
   const s=state(),p=s.premises,sc=API.getScenario('keep'),rows=sc.rows;
   if(!homeMonth||!rows.some(e=>e.month===homeMonth))homeMonth=rows.some(e=>e.month===nowMonth())?nowMonth():rows[0]?.month||nowMonth();
