@@ -1,6 +1,6 @@
 /* Apenas shell estático e público; nunca guardar respostas de API ou dados do usuário. */
-const CACHE='pcsp-financeiro-static-v3-1';
-const SHELL=['./','./index.html','./style.css','./v3.css','./app.js','./cloud.js','./v3.js','./v3-advanced.js','./amortization.js','./firebase-config.js','./manifest.webmanifest','./icon.svg'];
+const CACHE='pcsp-financeiro-static-v3-2';
+const SHELL=['./','./index.html','./style.css','./v3.css','./app.js','./cloud.js','./v3.js','./v3-advanced.js','./v3-calendar.js','./amortization.js','./firebase-config.js','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
