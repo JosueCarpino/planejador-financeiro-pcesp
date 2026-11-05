@@ -40,12 +40,20 @@
   rail.innerHTML='<div class="v3-rail-title">MENU PRINCIPAL</div><nav class="v3-rail-nav" aria-label="Navegação principal">'+navigation()+'</nav><div class="v3-rail-tail">Finanças PCESP<small>Uso pessoal • dados privados</small></div>';
   frame.append(rail,workspace);shell.append(frame);
   for(const item of menu){const v=htmlTag('section','v3-view');v.id='view-'+item[0];v.hidden=true;workspace.append(v);views[item[0]]=v;}
-  views.inicio.innerHTML=
-   '<div class="v3-heading"><div><span class="eyebrow">VISÃO FINANCEIRA</span><h1>Seu dinheiro, em perspectiva.</h1><p>Veja seu caixa, próximos compromissos e decisões importantes.</p></div><label class="v3-month-label">Mês de referência<input type="month" id="v3HomeMonth"></label></div>'+
-   '<div id="v3Overview" class="v3-overview"></div><div class="v3-home-grid">'+
-   '<section class="pane"><div class="v3-section-head"><h2>Próximos compromissos</h2><button type="button" data-go="transacoes" class="v3-inline-link">Ver transações</button></div><div id="v3Upcoming"></div></section>'+
-   '<section class="pane"><div class="v3-section-head"><h2>Fluxo líquido previsto</h2><button type="button" data-go="simulador" class="v3-inline-link">Simular</button></div><div id="v3MiniChart"></div></section></div>'+
-   '<section class="pane"><div class="v3-section-head"><h2>Pontos de atenção</h2><small class="v3-subtle">Alertas orientativos</small></div><div id="v3Alerts"></div></section>';
+  views.inicio.innerHTML=[
+    '<div class="v3-heading v3-home-heading"><div><span class="eyebrow">PAINEL FINANCEIRO</span><h1>Visão geral</h1><p>Saldo real, contas do mês e projeções separados para você decidir com clareza.</p></div><label class="v3-month-label">Mês analisado<input type="month" id="v3HomeMonth"></label></div>',
+    '<section class="v3-balance-hero" aria-label="Posição atual e estratégia selecionada">',
+      '<div class="v3-balance-main"><span class="v3-hero-kicker">SALDO INFORMADO NAS CONTAS</span><strong id="v3BankBalance">—</strong><span id="v3BankAsOf" class="v3-balance-caption">Atualizado manualmente</span><button type="button" data-go="contas" class="v3-hero-link">Atualizar contas</button></div>',
+      '<div class="v3-hero-side"><span class="v3-hero-kicker">ESTRATÉGIA EM ANÁLISE</span><h2 id="v3ScenarioHeadline">Manter contratos</h2><p id="v3ScenarioSummary">Simulação de fluxo de caixa</p><div class="v3-hero-figure"><span>Menor caixa previsto no horizonte</span><strong id="v3ScenarioFloor">—</strong></div><span id="v3ScenarioRisk" class="v3-risk-tag">Avaliando</span></div>',
+    '</section>',
+    '<section class="pane v3-home-choice" aria-labelledby="v3ChoiceTitle"><div class="v3-section-head"><div><h2 id="v3ChoiceTitle">Qual cenário quer analisar?</h2><p class="v3-subtle">Trocar de estratégia atualiza Início, Simulador, gráfico e fluxo mensal. Não contrata crédito.</p></div><button type="button" data-go="simulador" class="v3-inline-link">Detalhar simulação</button></div><div class="v3-home-options" id="v3HomeScenarios" role="group" aria-label="Selecionar estratégia financeira"></div></section>',
+    '<div id="v3Overview" class="v3-overview v3-home-metrics" aria-live="polite"></div>',
+    '<div class="v3-home-grid">',
+      '<section class="pane"><div class="v3-section-head"><div><h2>Entradas e saídas do mês</h2><p class="v3-subtle" id="v3BreakdownCaption">Detalhamento do cenário selecionado</p></div><button type="button" data-go="transacoes" class="v3-inline-link">Ver lançamentos</button></div><div id="v3Upcoming"></div></section>',
+      '<section class="pane"><div class="v3-section-head"><div><h2>Evolução projetada</h2><p class="v3-subtle">Resultado líquido por mês na estratégia escolhida</p></div><button type="button" data-go="simulador" class="v3-inline-link">Ver fluxo completo</button></div><div id="v3MiniChart"></div></section>',
+    '</div>',
+    '<section class="pane"><div class="v3-section-head"><div><h2>O que merece atenção</h2><span class="v3-subtle">Avisos baseados nas premissas informadas</span></div><div id="v3Alerts"></div></section>'
+   ].join('');
   views.transacoes.innerHTML=
    '<div class="v3-heading"><div><span class="eyebrow">ORGANIZE AS MOVIMENTAÇÕES</span><h1>Transações e faturas</h1><p>Edite, categorize e acompanhe entradas e despesas.</p></div><button type="button" class="v3-secondary" id="v3AddEntry">+ Novo lançamento</button></div>'+
    '<div class="v3-overview" id="v3LedgerSummary"></div>'+
@@ -70,7 +78,7 @@
   views.simulador.append(errorBanner,panel.newLoan,panel.scenarios,panel.metrics,panel.chart,panel.flow);
   const mobileRows=htmlTag('div','v3-mobile-flow');mobileRows.id='v3CashCards';panel.flow.append(mobileRows);
   panel.flow.querySelector('.table-scroll')?.classList.add('v3-flow-table');
-  $('scenarioCards').addEventListener('click',()=>setTimeout(renderMobileFlow,0));
+  document.addEventListener('fin-scenario-changed',()=>{renderHome();renderMobileFlow();});
   views.ajustes.innerHTML='<div class="v3-heading"><div><span class="eyebrow">CONTROLE DO SEU PLANO</span><h1>Ajustes e segurança</h1><p>Premissas, receitas, gastos, sincronização privada e backup.</p></div></div>';
   views.ajustes.append(oldIntro,panel.month,panel.expenses,panel.income,panel.cloud,panel.reset);
   const mobile=htmlTag('nav','v3-mobile-nav',navigation());mobile.setAttribute('aria-label','Menu inferior');document.body.append(mobile);
@@ -132,7 +140,7 @@
  function refresh(){renderHome();renderLedger();renderAccounts();renderDebts();renderMobileFlow();updateSync();}
  function renderMobileFlow(){
   const el=$('v3CashCards');if(!el)return;
-  const selected=$('scenarioCards').querySelector('[aria-pressed="true"]')?.dataset.scenario||'keep';
+  const selected=API.getSelectedScenario();
   const rows=API.getScenario(selected).rows;
   el.innerHTML=rows.map(x=>'<details class="v3-flow-card"><summary><span>'+esc(pretty(x.month))+'</span><span class="'+(x.net<0?'negative':'positive')+'">'+fmt(x.net)+'</span><b>'+fmt(x.balance)+'</b></summary><div><p>Entradas '+fmt(x.inc)+' · Saídas '+fmt(x.out)+'</p><ul>'+[...x.income,...x.expense].map(a=>'<li>'+esc(a.name)+' — '+fmt(a.amount)+'</li>').join('')+'</ul></div></details>').join('');
  }
@@ -206,6 +214,7 @@
  }
  function handleButton(ev){
   const b=ev.target.closest('button');if(!b)return;
+  if(b.dataset.homeScenario){API.setScenario(b.dataset.homeScenario);return;}
   if(b.dataset.go){go(b.dataset.go);return;}
   if(b.dataset.focus){go('dividas');$(b.dataset.focus).focus();$(b.dataset.focus).scrollIntoView({block:'center'});return;}
   if(b.dataset.edit){edit(b.dataset.edit);return;}
