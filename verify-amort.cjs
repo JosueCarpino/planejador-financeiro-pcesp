@@ -20,6 +20,8 @@ assert.equal(rate.capitalizedCharges,100);
 assert.ok(rate.costVsNet>rate.interestPaid);
 assert.equal(rate.rows.at(-1).balance,0);
 assert.ok(rate.rows.every((r,i)=>i===0||r.balance<=rate.rows[i-1].balance));
+const inconsistent=E.compare({financed:2000,net:1900,rate:1,term:12,extra:0,target:6,basePayment:100});
+assert.equal(inconsistent.baseMismatch,true);
 assert.throws(()=>E.schedule({financed:1000,net:1000,rate:10,term:12,extra:0,target:6,basePayment:1}),/não cobre os juros/);
 assert.throws(()=>E.schedule({financed:1000,net:1000,rate:1,term:0,extra:0,target:6}),/prazo/i);
 console.log('OK: Price, pagamento extra, prazo, juros e saldo residual.');
