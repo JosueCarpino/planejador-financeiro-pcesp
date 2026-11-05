@@ -1,5 +1,14 @@
 # Planejador Financeiro PCESP
 
+## Correções do dashboard e cenários (v3.1)
+
+- A tela **Início** separa o **saldo bancário informado** (posição real em uma data) dos **fluxos e saldos projetados** do mês e do cenário escolhidos.
+- O **mesmo cenário** é aplicado na página inicial, no Simulador, no gráfico e no fluxo de caixa. Os botões mantêm o estado selecionado ao navegar e exibem feedback visual e `aria-pressed`.
+- Selecionar um cenário **não grava dados financeiros**. A preferência de visualização fica apenas no navegador, e o plano privado continua no Firestore.
+- A análise exibe alertas quando faltam valor do empréstimo, gastos fixos ou conciliação de saldos. Sem crédito novo, a quitação simulada sai do caixa.
+- Indicadores e detalhamento mensal mostram os valores calculados para o cenário atual; eles não substituem extratos ou saldos bancários reais.
+- O pipeline valida com dados fictícios a sequência **Manter → Consolidar tudo → Consolidar parcialmente**, inclusive a consistência dos seletores e das projeções.
+
 ## Versão 3.0 — interface e fluxo de uso
 
 O site permanece independente do TAF e utiliza o mesmo documento privado do Firebase do próprio financeiro (projeto financas-1c48a). A atualização **não apaga, migra nem modifica automaticamente** o documento remoto. Novos campos são opcionais e backups anteriores continuam legíveis.
