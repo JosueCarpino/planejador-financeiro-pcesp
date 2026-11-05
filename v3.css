@@ -221,3 +221,16 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 .v3-disclaimer{font-size:12px;line-height:1.6;color:var(--v3-muted);margin-top:18px}
 @media(max-width:1120px){.v3-amort-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.v3-amort-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.v3-amort-fields{grid-template-columns:1fr}.v3-amort-overview{grid-template-columns:1fr 1fr}}
+
+.v3-mobile-flow{display:none}
+.v3-flow-card{background:var(--v3-bg);border:1px solid var(--v3-line);border-radius:11px;overflow:hidden}
+.v3-flow-card summary{cursor:pointer;display:grid;grid-template-columns:1fr 1fr 1.1fr;gap:7px;align-items:center;padding:13px;font-size:12px;list-style:none}
+.v3-flow-card summary::-webkit-details-marker{display:none}
+.v3-flow-card summary::before{content:"›";font-size:20px;line-height:1;grid-column:1;grid-row:1;color:var(--v3-muted);position:relative;left:0}
+.v3-flow-card summary span:first-child{padding-left:17px;grid-column:1;grid-row:1}
+.v3-flow-card summary b{font-size:13px;text-align:right}
+.v3-flow-card summary span:nth-child(2){text-align:right}
+.v3-flow-card[open] summary::before{content:"⌄"}
+.v3-flow-card>div{border-top:1px solid var(--v3-line);padding:12px;font-size:13px}
+.v3-flow-card ul{padding-left:18px;line-height:1.7;margin:8px 0}
+@media(max-width:760px){.v3-flow-table{display:none!important}.v3-mobile-flow{display:grid;gap:8px;margin-top:12px}}
