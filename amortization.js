@@ -45,7 +45,7 @@
     const accelerated=schedule(cfg);
     if(accelerated.empty)return accelerated;
     const standard=schedule({...cfg,extra:0});
-    return {...accelerated,standard,interestSaved:round(standard.interestPaid-accelerated.interestPaid),
+    return {...accelerated,standard,baseMismatch:Number(cfg.basePayment||0)>0&&Math.abs(standard.months-Number(cfg.term))>1,interestSaved:round(standard.interestPaid-accelerated.interestPaid),
       paidSaved:round(standard.total-accelerated.total),
       monthsSaved:Math.max(0,standard.months-accelerated.months)};
   }
