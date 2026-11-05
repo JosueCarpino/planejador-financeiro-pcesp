@@ -10,6 +10,7 @@ on:
       - "firebase-config.js"
       - "verify.cjs"
       - "verify-amort.cjs"
+      - "verify-ui.cjs"
       - "amortization.js"
       - "manifest.webmanifest"
       - "icon.svg"
@@ -44,6 +45,10 @@ jobs:
           node --check v3-advanced.js
           node verify.cjs
           node verify-amort.cjs
+      - name: Verificar interface HTML com DOM real
+        run: |
+          npm install --no-save --ignore-scripts jsdom@26.1.0
+          node verify-ui.cjs
       - name: Separar apenas arquivos publicos
         run: |
           mkdir -p public
@@ -54,6 +59,7 @@ jobs:
           test ! -e public/firestore.rules
           test ! -e public/verify.cjs
           test ! -e public/verify-amort.cjs
+          test ! -e public/verify-ui.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
