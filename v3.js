@@ -30,6 +30,7 @@
    scenarios:pick('scenarioCards'),metrics:pick('metrics'),chart:pick('chart'),flow:pick('cashflow'),
    bills:pick('billsOverview'),entries:pick('entryForm'),cloud:pick('cloudLogin')
   };
+  const errorBanner=$('errors');
   layout.remove();oldIntro.remove();
   const top=document.querySelector('.top');top.classList.add('v3-top');
   top.querySelector('nav')?.remove();
@@ -66,7 +67,7 @@
    '<label class="field">Bradesco 02<input type="number" data-total="new" min="0" max="360" step="1" placeholder="Não informado"></label></div></div>';
   views.dividas.append(panel.debts);
   views.simulador.innerHTML='<div class="v3-heading"><div><span class="eyebrow">COMPARAÇÃO DE CENÁRIOS</span><h1>Simulador financeiro</h1><p>Compare os empréstimos atuais com alternativas de consolidação e amortização.</p></div></div>';
-  views.simulador.append($('errors'),panel.newLoan,panel.scenarios,panel.metrics,panel.chart,panel.flow);
+  views.simulador.append(errorBanner,panel.newLoan,panel.scenarios,panel.metrics,panel.chart,panel.flow);
   const mobileRows=htmlTag('div','v3-mobile-flow');mobileRows.id='v3CashCards';panel.flow.append(mobileRows);
   panel.flow.querySelector('.table-scroll')?.classList.add('v3-flow-table');
   $('scenarioCards').addEventListener('click',()=>setTimeout(renderMobileFlow,0));
