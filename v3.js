@@ -145,30 +145,74 @@
   el.innerHTML=rows.map(x=>'<details class="v3-flow-card"><summary><span>'+esc(pretty(x.month))+'</span><span class="'+(x.net<0?'negative':'positive')+'">'+fmt(x.net)+'</span><b>'+fmt(x.balance)+'</b></summary><div><p>Entradas '+fmt(x.inc)+' · Saídas '+fmt(x.out)+'</p><ul>'+[...x.income,...x.expense].map(a=>'<li>'+esc(a.name)+' — '+fmt(a.amount)+'</li>').join('')+'</ul></div></details>').join('');
  }
  function renderHome(){
-  const s=state(),p=s.premises,sc=API.getScenario('keep'),rows=sc.rows;
-  if(!homeMonth||!rows.some(e=>e.month===homeMonth))homeMonth=rows.some(e=>e.month===nowMonth())?nowMonth():rows[0]?.month||nowMonth();
+  const model=state(),p=model.premises,kind=API.getSelectedScenario();
+  const all=API.getScenarios();
+  const sc=all.find(x=>x.kind===kind)||all[0],rows=sc.rows;
+  const today=nowMonth();
+  if(!homeMonth||!rows.some(x=>x.month===homeMonth)){
+   homeMonth=rows.some(x=>x.month===today)?today:rows[0]?.month||today;
+  }
   $('v3HomeMonth').value=homeMonth;
-  const row=rows.find(r=>r.month===homeMonth),accounts=Object.values(s.accounts||{}).reduce((a,v)=>a+Number(v||0),0);
-  const debts=p.nubBal+p.newBal+p.oldBal;
+  const row=rows.find(x=>x.month===homeMonth);
+  const accounts=Object.values(model.accounts||{}).reduce((a,b)=>a+Number(b||0),0);
+  const snapshot=model.snapshotDate?model.snapshotDate.split('-').reverse().join('/'):'data não informada';
+  const titles={
+   keep:['Manter contratos','Pagar as parcelas atuais, sem contratar novo crédito.'],
+   expensive:['Consolidar parcialmente','Quitar Nubank e Bradesco 02; manter Bradesco 01.'],
+   all:['Consolidar tudo','Quitar os três empréstimos e pagar o novo consignado.']
+  };
+  $('v3BankBalance').textContent=fmt(accounts);
+  $('v3BankAsOf').textContent='Posição informada em '+snapshot+' · não é saldo projetado';
+  $('v3ScenarioHeadline').textContent=titles[kind][0];
+  $('v3ScenarioSummary').textContent=titles[kind][1];
+  $('v3ScenarioFloor').textContent=fmt(sc.min);
+  $('v3ScenarioFloor').className=sc.min<0?'negative':'';
+  const riskLabel=sc.neg.length?sc.neg.length+' mês(es) com caixa negativo':
+   sc.under.length?sc.under.length+' mês(es) abaixo da reserva':'Sem déficit no horizonte';
+  const risk=$('v3ScenarioRisk');
+  risk.textContent=riskLabel;
+  risk.dataset.risk=sc.neg.length?'danger':sc.under.length?'warning':'stable';
+  $('v3HomeScenarios').innerHTML=all.map(x=>{
+   const active=x.kind===kind;
+   const risk=x.neg.length?x.neg.length+' mês(es) negativos':x.under.length?x.under.length+' abaixo da reserva':'Sem déficit';
+   const hasCredit=x.kind==='keep'||p.bbLoan>0;
+   return '<button type="button" data-home-scenario="'+x.kind+'" class="v3-home-option'+(active?' active':'')+'" aria-pressed="'+active+'">'+
+    '<span class="v3-choice-label"><span class="v3-choice-radio" aria-hidden="true"></span><strong>'+titles[x.kind][0]+'</strong></span>'+
+    '<small>'+titles[x.kind][1]+'</small>'+
+    '<span class="v3-choice-amount">'+fmt(x.end)+'</span>'+
+    '<span class="v3-choice-foot">Caixa ao fim do horizonte · '+risk+(hasCredit?'':' · crédito BB não informado')+'</span>'+
+   '</button>';
+  }).join('');
   $('v3Overview').innerHTML=
-   card('Saldo bancário informado',fmt(accounts),s.snapshotDate?'Posição em '+s.snapshotDate.split('-').reverse().join('/'):'Preencha suas contas')+
-   card('Caixa projetado no mês',fmt(row?.balance||0),pretty(homeMonth),(row?.balance||0)<0?'is-negative':'')+
-   card('Entradas / saídas previstas',fmt(row?.inc||0)+' / '+fmt(row?.out||0),'Fluxo mensal estimado')+
-   card('Quitação de empréstimos',fmt(debts),'Valores informados pelos bancos');
-  const i=rows.findIndex(r=>r.month===homeMonth);
-  const dues=[['Nubank',p.nubPmt,p.nubDue,p.nubRemain],['Bradesco 01',p.oldPmt,p.oldDue,p.oldRemain],['Bradesco 02',p.newPmt,p.newDue,p.newRemain]]
-   .filter(e=>e[1]>0&&(e[3]===0||i<e[3])).map(e=>({name:e[0],amount:e[1],day:e[2],type:'Empréstimo',status:'planned'}));
-  const others=s.entries.filter(e=>(e.month===homeMonth||(e.recurring==='monthly'&&e.month<=homeMonth))).map(e=>({name:e.name,amount:e.amount,day:e.dueDay||0,type:e.type==='income'?'Receita':'Despesa',status:e.status||'planned'}));
-  const dueList=[...dues,...others].sort((a,b)=>a.day-b.day);
-  $('v3Upcoming').innerHTML=dueList.length?dueList.slice(0,8).map(x=>'<div class="v3-upcoming"><div><b>'+esc(x.name)+'</b><small>'+esc(x.type)+(x.day?' · dia '+x.day:' · sem dia informado')+(x.status==='paid'?' · informado como pago':'')+'</small></div><strong>'+fmt(x.amount)+'</strong></div>').join(''):'<p class="v3-empty">Nenhum compromisso detalhado neste mês.</p>';
-  const m=rows.slice(0,Math.min(12,rows.length)),max=Math.max(1,...m.map(e=>Math.abs(e.net)));
-  $('v3MiniChart').innerHTML='<div class="v3-bars">'+m.map(x=>'<div class="v3-bar-col" title="'+esc(pretty(x.month)+' — '+fmt(x.net))+'"><div class="v3-bar '+(x.net<0?'down':'up')+'" style="height:'+Math.max(4,Math.round(Math.abs(x.net)/max*102))+'px"></div><small>'+x.month.slice(5)+'/'+x.month.slice(2,4)+'</small></div>').join('')+'</div><p class="v3-subtle">Resultado líquido previsto por mês. Não é extrato bancário.</p>';
+   card('Entradas previstas',fmt(row?.inc||0),'No mês de '+pretty(homeMonth))+
+   card('Saídas previstas',fmt(row?.out||0),'Inclui parcelas do cenário')+
+   card('Resultado do mês',fmt(row?.net||0),'Entradas menos saídas',(row?.net||0)<0?'is-negative':'')+
+   card('Caixa ao final do mês',fmt(row?.balance||0),'Projeção, não saldo bancário',(row?.balance||0)<0?'is-negative':'');
+  $('v3BreakdownCaption').textContent=pretty(homeMonth)+' · '+titles[kind][0];
+  const details=[
+   ...(row?.income||[]).map(x=>({name:x.name,amount:x.amount,type:'income'})),
+   ...(row?.expense||[]).map(x=>({name:x.name,amount:x.amount,type:'expense'}))
+  ];
+  const shown=details.slice(0,9);
+  $('v3Upcoming').innerHTML=shown.length?shown.map(x=>'<div class="v3-upcoming"><div><b>'+esc(x.name)+'</b><small>'+(x.type==='income'?'Entrada prevista':'Saída prevista')+'</small></div><strong class="'+(x.type==='income'?'positive':'negative')+'">'+(x.type==='income'?'+':'−')+fmt(x.amount)+'</strong></div>').join('')+
+   (details.length>shown.length?'<p class="v3-subtle">Mais '+(details.length-shown.length)+' movimentação(ões). Consulte o fluxo completo.</p>':''):
+   '<p class="v3-empty">Sem receitas ou despesas calculadas para este mês. Verifique as premissas em Ajustes.</p>';
+  const bars=rows.slice(0,Math.min(12,rows.length));
+  const max=Math.max(1,...bars.map(x=>Math.abs(x.net)));
+  $('v3MiniChart').innerHTML='<div class="v3-bars">'+bars.map(x=>{
+   const height=Math.max(4,Math.round(Math.abs(x.net)/max*102));
+   const active=x.month===homeMonth;
+   return '<div class="v3-bar-col'+(active?' v3-bar-current':'')+'" title="'+esc(pretty(x.month)+' — '+fmt(x.net))+'"><div class="v3-bar '+(x.net<0?'down':'up')+'" style="height:'+height+'px"></div><small>'+x.month.slice(5)+'/'+x.month.slice(2,4)+'</small></div>';
+  }).join('')+'</div><p class="v3-subtle">Cada barra representa entradas menos saídas no mês. Verde: resultado positivo; rosa: negativo.</p>';
   const alerts=[];
-  if((row?.balance||0)<0)alerts.push(['danger','O caixa projetado fica negativo em '+pretty(homeMonth)+'.']);
-  if(sc.neg.length)alerts.push(['warning','Há '+sc.neg.length+' mês(es) com caixa negativo dentro do horizonte.']);
-  if(p.cost===0)alerts.push(['warning','Gastos fixos não informados podem superestimar a sobra.']);
-  if(accounts>0&&Math.abs(accounts-p.cash)>.02)alerts.push(['warning','O caixa inicial difere da soma das contas. Confira a data dos saldos.']);
-  if(!alerts.length)alerts.push(['','Nenhum alerta crítico encontrado com os dados informados.']);
+  if(sc.neg.length)alerts.push(['danger','A estratégia selecionada projeta caixa negativo em '+sc.neg.length+' mês(es). O menor valor é '+fmt(sc.min)+'.']);
+  else if(sc.under.length)alerts.push(['warning','A reserva desejada não é mantida em '+sc.under.length+' mês(es) deste cenário.']);
+  if(kind!=='keep'&&p.bbLoan<=0)alerts.push(['warning','Nenhum valor de novo crédito foi informado. As quitações simuladas saem integralmente do seu caixa.']);
+  if(kind!=='keep'&&p.bbLoan<sc.payoff)alerts.push(['warning','O crédito é '+fmt(sc.payoff-p.bbLoan)+' inferior ao valor necessário para as quitações simuladas.']);
+  if(p.cost===0)alerts.push(['warning','Gastos fixos estão zerados: a projeção pode superestimar o dinheiro disponível.']);
+  if(accounts>0&&Math.abs(accounts-p.cash)>.02)alerts.push(['warning','O caixa inicial informado é diferente da soma dos saldos bancários. Verifique a data-base antes de comparar cenários.']);
+  if(!model.snapshotDate)alerts.push(['','Informe a data dos saldos bancários para diferenciar a posição real das projeções.']);
+  if(!alerts.length)alerts.push(['','Nenhum alerta crítico foi encontrado neste cenário com as premissas registradas.']);
   $('v3Alerts').innerHTML=alerts.map(a=>'<div class="v3-alert '+a[0]+'">'+esc(a[1])+'</div>').join('');
  }
  function renderAccounts(){
