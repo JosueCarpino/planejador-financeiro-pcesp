@@ -35,7 +35,7 @@
   const top=document.querySelector('.top');top.classList.add('v3-top');
   top.querySelector('nav')?.remove();
   const mini=top.querySelector('.brand small');if(mini)mini.textContent='Gestor pessoal • versão 3.0';
-  top.append(htmlTag('div','v3-top-actions','<span id="v3CloudState" class="v3-cloud" role="status">● Salvo neste dispositivo</span><button type="button" class="v3-icon-btn" id="v3Theme" aria-label="Alternar aparência">◐</button>'));
+  top.append(htmlTag('div','v3-top-actions','<a href="#ajustes" data-nav="ajustes" id="v3CloudState" class="v3-cloud" role="status" title="Ver sincronização privada">● Salvo neste dispositivo</a><button type="button" class="v3-icon-btn" id="v3Theme" aria-label="Alternar aparência">◐</button>'));
   const frame=htmlTag('div','v3-frame'),rail=htmlTag('aside','v3-rail'),workspace=htmlTag('div','v3-workspace');
   rail.innerHTML='<div class="v3-rail-title">MENU PRINCIPAL</div><nav class="v3-rail-nav" aria-label="Navegação principal">'+navigation()+'</nav><div class="v3-rail-tail">Finanças PCESP<small>Uso pessoal • dados privados</small></div>';
   frame.append(rail,workspace);shell.append(frame);
