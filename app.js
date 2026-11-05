@@ -1,6 +1,7 @@
 (() => {
 'use strict';
-const KEY='pcsp_financeiro_v2', VERSION=2;
+const KEY='pcsp_financeiro_v2', SELECTION_KEY='pcsp_financeiro_scenario', VERSION=2;
+const SCENARIO_KINDS=['keep','expensive','all'];
 const ids=['monthStart','horizon','cash','cost','costSep','reserve','fgts','acad','novIncome','novComps','post','bonus','nubBal','nubPmt','nubDue','nubRemain','newBal','newPmt','newDue','newRemain','oldBal','oldPmt','oldDue','oldRemain','bbLoan','bbRate','bbTerm','startPay'];
 const nums=new Set(ids.filter(x=>!['monthStart'].includes(x)));
 const $=id=>document.getElementById(id);
@@ -10,6 +11,20 @@ const defaultP={monthStart:'2026-09',horizon:16,cash:0,cost:0,costSep:0,reserve:
 const ADVANCED_DEFAULTS={financed:0,net:0,rate:0,term:96,extra:0,target:48,basePayment:0};
 let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{},payroll:{},advanced:{...ADVANCED_DEFAULTS},loanTotals:{nub:0,new:0,old:0}},selected='keep',latest=[];
 let onUpdate=()=>{};
+function selectionValid(kind){return SCENARIO_KINDS.includes(kind);}
+try{
+ const savedScenario=localStorage.getItem(SELECTION_KEY);
+ if(selectionValid(savedScenario))selected=savedScenario;
+}catch(e){/* Persistência da preferência é opcional. */}
+function setScenario(kind){
+ if(!selectionValid(kind))return false;
+ const changed=selected!==kind;
+ selected=kind;
+ try{localStorage.setItem(SELECTION_KEY,kind);}catch(e){}
+ render();
+ if(changed)document.dispatchEvent(new CustomEvent('fin-scenario-changed',{detail:{scenario:kind}}));
+ return true;
+}
 const money=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
 function validate(s){
  if(!s || typeof s!=='object')throw Error('Arquivo sem estrutura de dados válida.');
@@ -204,7 +219,7 @@ $('useAccounts').addEventListener('click',()=>{
  changed();
 });
 document.querySelectorAll('aside input,aside select').forEach(e=>e.addEventListener('input',changed));
-$('scenarioCards').addEventListener('click',e=>{const n=e.target.closest('[data-scenario]');if(n){selected=n.dataset.scenario;render();}});
+$('scenarioCards').addEventListener('click',e=>{const n=e.target.closest('[data-scenario]');if(n)setScenario(n.dataset.scenario);});
 $('entryForm').addEventListener('submit',e=>{
  e.preventDefault();
  if(state.entries.length>=250){alert('Máximo de 250 lançamentos.');return;}
@@ -271,6 +286,8 @@ setForm(state.premises);render();
 window.FIN_APP={
  get:()=>JSON.parse(JSON.stringify(state)),
  replace,mergeSnapshot,validate,
+ getSelectedScenario:()=>selected,
+ setScenario,
  getScenario:kind=>simulate(['keep','expensive','all'].includes(kind)?kind:'keep',state.premises,state.entries),
  getScenarios:()=>['keep','expensive','all'].map(kind=>simulate(kind,state.premises,state.entries)),
  changeListener:fn=>{onUpdate=fn;}
