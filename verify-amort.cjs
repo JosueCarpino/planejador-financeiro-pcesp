@@ -1,0 +1,25 @@
+// Testes de regressão do motor Price e amortização; dados totalmente fictícios.
+'use strict';
+const assert=require('node:assert/strict');
+require('./amortization.js');
+const E=globalThis.FIN_AMORT;
+assert.ok(E);
+assert.equal(E.price(1200,0,12),100);
+const zero=E.compare({financed:1200,net:1200,rate:0,term:12,extra:100,target:6,basePayment:0});
+assert.equal(zero.months,6);
+assert.equal(zero.total,1200);
+assert.equal(zero.targetBalance,0);
+assert.equal(zero.interestSaved,0);
+assert.equal(zero.standard.months,12);
+const rate=E.compare({financed:2000,net:1900,rate:1,term:12,extra:100,target:8,basePayment:0});
+assert.equal(rate.rows[0].interest,20);
+assert.ok(rate.months<rate.standard.months);
+assert.ok(rate.interestPaid<rate.standard.interestPaid);
+assert.ok(rate.total<rate.standard.total);
+assert.equal(rate.capitalizedCharges,100);
+assert.ok(rate.costVsNet>rate.interestPaid);
+assert.equal(rate.rows.at(-1).balance,0);
+assert.ok(rate.rows.every((r,i)=>i===0||r.balance<=rate.rows[i-1].balance));
+assert.throws(()=>E.schedule({financed:1000,net:1000,rate:10,term:12,extra:0,target:6,basePayment:1}),/não cobre os juros/);
+assert.throws(()=>E.schedule({financed:1000,net:1000,rate:1,term:0,extra:0,target:6}),/prazo/i);
+console.log('OK: Price, pagamento extra, prazo, juros e saldo residual.');
