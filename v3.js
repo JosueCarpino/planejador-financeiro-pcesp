@@ -67,6 +67,9 @@
   views.dividas.append(panel.debts);
   views.simulador.innerHTML='<div class="v3-heading"><div><span class="eyebrow">COMPARAÇÃO DE CENÁRIOS</span><h1>Simulador financeiro</h1><p>Compare os empréstimos atuais com alternativas de consolidação e amortização.</p></div></div>';
   views.simulador.append($('errors'),panel.newLoan,panel.scenarios,panel.metrics,panel.chart,panel.flow);
+  const mobileRows=htmlTag('div','v3-mobile-flow');mobileRows.id='v3CashCards';panel.flow.append(mobileRows);
+  panel.flow.querySelector('.table-scroll')?.classList.add('v3-flow-table');
+  $('scenarioCards').addEventListener('click',()=>setTimeout(renderMobileFlow,0));
   views.ajustes.innerHTML='<div class="v3-heading"><div><span class="eyebrow">CONTROLE DO SEU PLANO</span><h1>Ajustes e segurança</h1><p>Premissas, receitas, gastos, sincronização privada e backup.</p></div></div>';
   views.ajustes.append(oldIntro,panel.month,panel.expenses,panel.income,panel.cloud,panel.reset);
   const mobile=htmlTag('nav','v3-mobile-nav',navigation());mobile.setAttribute('aria-label','Menu inferior');document.body.append(mobile);
