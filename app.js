@@ -198,7 +198,10 @@ $('entryForm').addEventListener('submit',e=>{
  if(state.entries.length>=250){alert('Máximo de 250 lançamentos.');return;}
  const month=$('entryMonth').value,name=$('entryName').value.trim().slice(0,80),amount=Number($('entryAmount').value);
  if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)||!name||!Number.isFinite(amount)||amount<=0||amount>1e9){alert('Preencha mês, descrição e valor positivo válido.');return;}
- state.entries.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),month,name,amount:money(amount),type:$('entryType').value,recurring:$('entryRecurring').value});
+ state.entries.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,8),month,name,amount:money(amount),type:$('entryType').value,recurring:$('entryRecurring').value,
+   dueDay:Number(document.getElementById('entryDueDay')?.value||0),
+   category:String(document.getElementById('entryCategory')?.value||'Geral').slice(0,35),
+   status:'planned'});
  store();render();document.dispatchEvent(new CustomEvent('fin-changed'));$('entryName').value='';$('entryAmount').value='';
 });
 $('entryList').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b)return;state.entries=state.entries.filter(x=>x.id!==b.dataset.remove);store();render();document.dispatchEvent(new CustomEvent('fin-changed'));});
