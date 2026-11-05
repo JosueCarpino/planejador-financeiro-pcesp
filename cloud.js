@@ -71,12 +71,18 @@ async function save(manual) {
       status('Envio cancelado. Os dados locais foram preservados.');
       return;
     }
-    await sdk.setDoc(ref, { schemaVersion: 2, payload: snapshot, updatedAt: sdk.serverTimestamp() });
+    // Transação com verificação de revisão evita sobrescrever uma gravação concorrente.
+    await sdk.runTransaction(db, async transaction => {
+      const latest = await transaction.get(ref);
+      if (revision(latest) !== currentRevision) throw Error('O plano foi alterado por outro dispositivo durante o envio. Recarregue da nuvem ou revise antes de tentar novamente.');
+      transaction.set(ref, { schemaVersion: 2, payload: snapshot, updatedAt: sdk.serverTimestamp() });
+    });
     // Confirmar timestamp real, usado para detectar alterações externas na próxima sincronização.
     const confirmed = await sdk.getDocFromServer(ref);
     if (!confirmed.exists()) throw Error('A gravação não pôde ser confirmada no servidor.');
     if (!user || user.uid !== uid) return;
     knownRevision = revision(confirmed);
+    try { localStorage.setItem('pcsp-cloud-last-confirmed',new Date().toISOString()); } catch {}
     ready = true;
     status('Salvo na nuvem e confirmado. Suas próximas alterações serão sincronizadas automaticamente.', 'positive');
     if (editVersion !== savedVersion) queued = true;
@@ -113,6 +119,7 @@ async function load() {
     APP.replace(remote);
     editVersion = 0; queued = false;
     knownRevision = revision(snap);
+    try { localStorage.setItem('pcsp-cloud-last-confirmed',new Date().toISOString()); } catch {}
     ready = true;
     status('Plano recuperado da nuvem. Alterações futuras serão sincronizadas automaticamente.', 'positive');
   } catch (err) {
