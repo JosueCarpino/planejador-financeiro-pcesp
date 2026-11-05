@@ -7,7 +7,8 @@ const $=id=>document.getElementById(id);
 const brl=v=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const defaultP={monthStart:'2026-09',horizon:16,cash:0,cost:0,costSep:0,reserve:0,fgts:0,acad:0,novIncome:0,novComps:2,post:0,bonus:0,nubBal:0,nubPmt:0,nubDue:0,nubRemain:0,newBal:0,newPmt:0,newDue:0,newRemain:0,oldBal:0,oldPmt:0,oldDue:0,oldRemain:0,bbLoan:0,bbRate:1.8,bbTerm:60,startPay:1};
-let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{},payroll:{}},selected='keep',latest=[];
+const ADVANCED_DEFAULTS={financed:0,net:0,rate:0,term:96,extra:0,target:48,basePayment:0};
+let state={version:VERSION,premises:{...defaultP},entries:[],accounts:{nubank:0,bb:0,bradesco:0},snapshotDate:'',loanRefs:{},payroll:{},advanced:{...ADVANCED_DEFAULTS},loanTotals:{nub:0,new:0,old:0}},selected='keep',latest=[];
 let onUpdate=()=>{};
 const money=v=>Math.round((Number(v)+Number.EPSILON)*100)/100;
 function validate(s){
@@ -31,13 +32,28 @@ function validate(s){
  for(const k of ['nub','new','old'])loanRefs[k]=String(s.loanRefs?.[k]??'').slice(0,100);
  const payroll={nextDate:String(s.payroll?.nextDate||'').slice(0,10),cadence:String(s.payroll?.cadence||'').slice(0,90)};
  if(payroll.nextDate&&!/^20\d{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/.test(payroll.nextDate))throw Error('Data do próximo pagamento inválida.');
+ const advanced={};
+ for(const [key,def] of Object.entries(ADVANCED_DEFAULTS)){
+  const val=Number(s.advanced?.[key]??def);
+  if(!Number.isFinite(val)||val<0||val>1e9)throw Error('Valor do simulador avançado inválido: '+key);
+  advanced[key]=val;
+ }
+ if(!Number.isInteger(advanced.term)||advanced.term<1||advanced.term>360||!Number.isInteger(advanced.target)||advanced.target<1||advanced.target>360||advanced.rate>100)throw Error('Prazo ou taxa inválidos no simulador avançado.');
+ const loanTotals={};
+ for(const key of ['nub','new','old']){
+  const val=Number(s.loanTotals?.[key]??0);
+  if(!Number.isInteger(val)||val<0||val>360)throw Error('Total de parcelas inválido para '+key);
+  loanTotals[key]=val;
+ }
  if(!Array.isArray(s.entries)||s.entries.length>250)throw Error('Quantidade inválida de lançamentos.');
  const entries=s.entries.map((x,i)=>{
   const month=String(x.month||''),name=String(x.name||'').trim().slice(0,80),amount=Number(x.amount),type=x.type,recurring=x.recurring;
   if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(month)||!name||!Number.isFinite(amount)||amount<=0||amount>1e9||!['income','expense'].includes(type)||!['once','monthly'].includes(recurring))throw Error('Lançamento inválido: '+(i+1));
-  return {id:String(x.id||('row-'+i)).slice(0,48),month,name,amount:money(amount),type,recurring};
+  const status=x.status??'planned',dueDay=Number(x.dueDay??0),category=String(x.category??'Geral').trim().slice(0,35)||'Geral';
+  if(!['planned','paid'].includes(status)||!Number.isInteger(dueDay)||dueDay<0||dueDay>31)throw Error('Status ou vencimento inválido no lançamento '+(i+1));
+  return {id:String(x.id||('row-'+i)).slice(0,48),month,name,amount:money(amount),type,recurring,status,dueDay,category};
  });
- return {version:VERSION,premises:p,entries,accounts,snapshotDate,loanRefs,payroll};
+ return {version:VERSION,premises:p,entries,accounts,snapshotDate,loanRefs,payroll,advanced,loanTotals};
 }
 function setForm(p){
  for(const id of ids)$(id).value=p[id];
@@ -204,7 +220,9 @@ function mergeSnapshot(patch){
   entries:[...retained,...patch.entries],
   snapshotDate:patch.snapshotDate||state.snapshotDate,
   loanRefs:{...state.loanRefs,...patch.loanRefs},
-  payroll:{...state.payroll,...patch.payroll}
+  payroll:{...state.payroll,...patch.payroll},
+  advanced:{...state.advanced,...patch.advanced},
+  loanTotals:{...state.loanTotals,...patch.loanTotals}
  });
 }
 $('importFile').addEventListener('change',async e=>{
@@ -235,5 +253,11 @@ $('csvBtn').addEventListener('click',()=>{
 });
 try{const saved=localStorage.getItem(KEY);if(saved)state=validate(JSON.parse(saved));}catch(e){console.warn('Não foi possível restaurar dados locais:',e.message);}
 setForm(state.premises);render();
-window.FIN_APP={get:()=>JSON.parse(JSON.stringify(state)),replace,mergeSnapshot,changeListener:fn=>{onUpdate=fn;},validate};
+window.FIN_APP={
+ get:()=>JSON.parse(JSON.stringify(state)),
+ replace,mergeSnapshot,validate,
+ getScenario:kind=>simulate(['keep','expensive','all'].includes(kind)?kind:'keep',state.premises,state.entries),
+ getScenarios:()=>['keep','expensive','all'].map(kind=>simulate(kind,state.premises,state.entries)),
+ changeListener:fn=>{onUpdate=fn;}
+};
 })();
