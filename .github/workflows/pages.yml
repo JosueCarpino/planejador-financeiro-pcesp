@@ -9,6 +9,11 @@ on:
       - "style.css"
       - "firebase-config.js"
       - "verify.cjs"
+      - "verify-amort.cjs"
+      - "amortization.js"
+      - "v3.js"
+      - "v3.css"
+      - "v3-advanced.js"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 permissions:
@@ -30,15 +35,20 @@ jobs:
         run: |
           node --check app.js
           node --check cloud.js
+          node --check amortization.js
+          node --check v3.js
+          node --check v3-advanced.js
           node verify.cjs
+          node verify-amort.cjs
       - name: Separar apenas arquivos publicos
         run: |
           mkdir -p public
-          cp index.html app.js cloud.js style.css firebase-config.js public/
+          cp index.html app.js cloud.js style.css v3.css v3.js v3-advanced.js amortization.js firebase-config.js public/
           touch public/.nojekyll
           test ! -e public/web_app_pcesp.py
           test ! -e public/firestore.rules
           test ! -e public/verify.cjs
+          test ! -e public/verify-amort.cjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
