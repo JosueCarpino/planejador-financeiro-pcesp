@@ -76,7 +76,7 @@
     stat('Custo acima do líquido',r.costVsNet===null?'Não informado':format(r.costVsNet),'Exige valor liberado')+
     stat('Financiado menos líquido',r.capitalizedCharges===null?'Não informado':format(r.capitalizedCharges),'Pode envolver IOF e custos')+
     '</div>'+
-    '<div class="v3-alert warning">Este resultado não garante quitação antecipada junto ao banco. O pagamento extra pode exigir solicitação mensal. Confirme a ausência de saldo residual e o CET na proposta contratual.</div>';
+    '<div class="v3-alert warning">Este resultado não garante quitação antecipada junto ao banco. O pagamento extra pode exigir solicitação mensal. Confirme a ausência de saldo residual e o CET na proposta contratual.</div>'+ (r.baseMismatch?'<div class="v3-alert danger">A parcela contratual, o prazo e a taxa informados são inconsistentes no modelo Price. Revise a proposta oficial.</div>':'');
    table.innerHTML=r.rows.map(v=>'<tr><td>'+v.month+'</td><td class="right">'+format(v.interest)+'</td><td class="right">'+format(v.contractual)+'</td><td class="right">'+format(v.extra)+'</td><td class="right">'+format(v.paid)+'</td><td class="right">'+format(v.balance)+'</td></tr>').join('');
    chart(r);
   }catch(err){
